@@ -1,26 +1,290 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Design system extraído de digitaleduca.com.vc — o ciano #14bade, o navy
+  #04121d e o texto #edf6ff são os mesmos do site institucional.
+
+  O tema CLARO é o padrão. O escuro entra por `data-tema="escuro"` no <html>,
+  definido no servidor a partir de um cookie: assim a página já chega pintada
+  e não há piscada na hidratação.
+
+  Cada token abaixo é redefinido no bloco do tema escuro — nenhuma cor é
+  declarada só de um lado.
+*/
+@theme {
+  --color-fundo: #f4f8fb;
+  --color-fundo-2: #eaf1f8;
+  /*
+    Cromo = as bordas da aplicação (menu lateral e barra superior). Token
+    próprio porque a intenção se inverte entre os temas: no claro ele é mais
+    claro que a página, no escuro é mais escuro. Usar `superficie` deixaria o
+    menu mais claro que o conteúdo no tema escuro.
+  */
+  --color-cromo: #ffffff;
+  --color-brand: #00324e;
+  --color-superficie: #ffffff;
+  --color-superficie-2: #eef4f9;
+  --color-borda: #c3d5e4;
+  --color-borda-suave: #dfe9f2;
+
+  --color-texto: #08192a;
+  --color-texto-2: #33546f;
+  --color-texto-3: #5c7186;
+
+  --color-acento: #0c7299;
+  --color-acento-hover: #0a6486;
+  --color-acento-claro: #14bade;
+  --color-acento-suave: #8fe3f9;
+  --color-acento-escuro: #0f7fb0;
+  --color-azul-claro: #006e86;
+
+  --color-sucesso: #067a5e;
+  --color-alerta: #c0392f;
+
+  --font-sans: var(--fonte-corpo), system-ui, sans-serif;
+  --font-display: var(--fonte-display), var(--fonte-corpo), sans-serif;
+
+  /* Celulares grandes: entre o padrão do Tailwind (sm = 40rem) e a base. */
+  --breakpoint-xs: 30rem;
+
+  /* Curvas: saída rápida para o que responde ao toque, suave para o resto. */
+  --ease-saida: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-suave: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --animate-surgir: surgir 0.4s var(--ease-suave) both;
+  --animate-subir: subir 0.45s var(--ease-saida) both;
+  --animate-pulsar: pulsar 1.8s var(--ease-suave) infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes surgir {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulsar {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/*
+  Tema escuro. Só troca os tokens — nenhum componente conhece o tema, todos
+  leem as mesmas variáveis.
+*/
+[data-tema="escuro"] {
+  --color-fundo: #04121d;
+  --color-fundo-2: #0a0f18;
+  --color-cromo: #0a0f18;
+  --color-superficie: #141e30;
+  --color-superficie-2: #1a3848;
+  --color-borda: #205d75;
+  --color-borda-suave: #15344e;
+
+  --color-texto: #edf6ff;
+  --color-texto-2: #c7d7e7;
+  --color-texto-3: #8b9bab;
+
+  --color-acento: #14bade;
+  --color-acento-hover: #3ccdee;
+  --color-acento-claro: #7edcf8;
+
+  --color-sucesso: #03a982;
+  --color-alerta: #e0574f;
+
+  color-scheme: dark;
+}
+
+/* Permite estilos pontuais por tema, ex.: trocar o arquivo do logotipo. */
+@custom-variant escuro (&:where([data-tema="escuro"] *));
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+  /* Evita o zoom involuntário ao girar o aparelho. */
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-fundo);
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Sem "puxar" a página na borda: o scroll pertence à área de conteúdo. */
+  overscroll-behavior-y: none;
+}
+
+/* Trava a rolagem de fundo enquanto a gaveta do menu está aberta. */
+body[data-gaveta="aberta"] {
+  overflow: hidden;
+}
+
+/* No toque, o realce cinza padrão do iOS/Android atrapalha o design. */
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+  O Tailwind v4 mudou o padrão de <button> de `pointer` para `default`, então
+  tudo que é clicável mas não é <a> ficou com a seta. Devolvemos a mãozinha —
+  menos onde a ação está desabilitada, que deve continuar sinalizando isso.
+*/
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+summary,
+label:has(input[type="checkbox"]),
+input[type="checkbox"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Trilhos horizontais dos carrosséis. */
+.trilho {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x proximity;
+
+  /* Quantos cards inteiros cabem e quanto do seguinte fica espiando. */
+  --colunas: 2;
+  --espiada: 0.2;
+  --vao: 0.75rem;
+}
+.trilho::-webkit-scrollbar {
+  display: none;
+}
+.trilho > * {
+  scroll-snap-align: start;
+}
+
+@media (min-width: 40rem) {
+  .trilho {
+    --vao: 1rem;
+  }
+}
+
+@media (min-width: 48rem) {
+  .trilho {
+    --colunas: 3;
+  }
+}
+
+@media (min-width: 64rem) {
+  .trilho {
+    --colunas: 4;
+  }
+}
+
+/*
+  Largura do card dentro do trilho.
+
+  A área visível em repouso vai do início do conteúdo até a parede direita —
+  ou seja, a caixa de conteúdo (100%) MAIS a calha da esquerda, já que o card
+  seguinte avança por baixo dela. Dividimos essa medida pelo número de colunas
+  somado à fração que deve espiar, descontando os vãos entre os cards.
+
+  `flex-basis` tem precedência sobre `width`, então isto vence o `w-full` que
+  o card usa quando aparece em grade.
+*/
+.card-trilho {
+  flex: 0 0
+    calc(
+      (100% + var(--calha) - (var(--colunas) - 1) * var(--vao)) /
+        (var(--colunas) + var(--espiada))
+    );
+}
+
+/*
+  Calha lateral da plataforma.
+
+  O layout logado é fluido: nenhum container tem largura máxima, então o
+  alinhamento entre título e conteúdo sai de graça — todos usam a mesma calha.
+  Mobile-first: a base é o celular e os `min-width` apenas somam.
+*/
+.calha {
+  --calha: 1.25rem;
+  padding-inline: var(--calha);
+  /*
+    Sem isto o scroll-snap encaixa os cards na PAREDE, não na calha: por padrão
+    o snapport é a caixa de padding do container, então ao soltar o mouse o
+    card "corrigia" para a borda, desalinhando do título. O scroll-padding
+    recua o snapport para onde o conteúdo começa.
+  */
+  scroll-padding-inline: var(--calha);
+}
+
+@media (min-width: 40rem) {
+  .calha {
+    --calha: 2rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .calha {
+    --calha: 2.5rem;
+  }
+}
+
+/*
+  Gradiente de leitura sobre as capas: apenas na horizontal, dando fundo ao
+  texto à esquerda e liberando a imagem à direita. Sem véu na base — a capa
+  encontra a página direto.
+*/
+.veu-heroi {
+  background: linear-gradient(
+    to right,
+    var(--color-fundo) 8%,
+    color-mix(in srgb, var(--color-fundo) 82%, transparent) 42%,
+    transparent 78%
+  );
+}
+
+/* Brilho ciano difuso usado atrás do herói da landing. */
+.aura-acento {
+  background: radial-gradient(
+    60% 60% at 50% 40%,
+    color-mix(in srgb, var(--color-acento) 22%, transparent) 0%,
+    transparent 70%
+  );
 }

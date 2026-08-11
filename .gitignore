@@ -33,6 +33,16 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# credenciais / acessos — nunca versionar
+acesso.txt
+*.credentials
+id_rsa*
+
+# Relatórios de auditoria: descrevem a infraestrutura e as falhas do servidor.
+# Este repositório é público — publicá-los entregaria o mapa de ataque.
+# Ficam apenas em disco; se forem versionar, que seja num repo privado.
+docs/
+
 # vercel
 .vercel
 
