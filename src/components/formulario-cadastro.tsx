@@ -41,8 +41,8 @@ export function FormularioCadastro() {
         return;
       }
 
-      // Se o login automático falhar, a conta existe — mandamos para /entrar.
-      router.replace(corpo.autenticado ? "/inicio" : "/entrar");
+      // Se o login automático falhar, a conta existe — mandamos para o login.
+      router.replace(corpo.autenticado ? "/inicio" : "/");
       router.refresh();
     } catch {
       setErro("Falha de conexão. Verifique sua internet e tente de novo.");
@@ -108,14 +108,14 @@ export function FormularioCadastro() {
       <button
         type="submit"
         disabled={enviando}
-        className="bg-acento text-fundo hover:bg-acento-claro mt-2 rounded-full px-6 py-3 text-sm font-bold transition-colors disabled:opacity-60"
+        className="bg-acento text-white hover:bg-acento-hover mt-2 rounded-full px-6 py-3 text-sm font-bold transition-colors disabled:opacity-60"
       >
         {enviando ? "Criando conta…" : "Criar conta"}
       </button>
 
       <p className="text-texto-3 text-center text-sm">
         Já tem conta?{" "}
-        <Link href="/entrar" className="text-acento hover:text-acento-claro font-semibold">
+        <Link href="/" className="text-acento hover:text-acento-claro font-semibold">
           Entrar
         </Link>
       </p>

@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  arvoreFreemium,
   emAndamento,
   listarConteudos,
+  listarTodasCategorias,
   listarInstrutores,
-  listarTop10,
+  maisAssistidosSemPodcast,
+  mapaDeProgresso,
   paraCard,
 } from "@/lib/queries";
 import {
@@ -17,37 +18,58 @@ import {
 } from "@/lib/format";
 import { CardConteudo } from "@/components/card-conteudo";
 import { Trilho } from "@/components/trilho";
-import { Selo } from "@/components/selo";
-import type { Conteudo } from "@/types/api";
+import { iconeDaCategoria } from "@/lib/icones-categoria";
+import { HeroiSlide } from "@/components/heroi-slide";
 
 /** Home de quem já entrou: catálogo completo em trilhos. */
 export async function Catalogo() {
-  const [destaques, top10Aulas, top10Podcasts, freemium, instrutores] =
+  const [destaques, maisAssistidos, aulas, palestras, podcasts, instrutores] =
     await Promise.all([
       listarConteudos({ destaque: true, limit: 12 }),
-      listarTop10({ tipo: "AULA" }),
-      listarTop10({ tipo: "PODCAST" }),
-      arvoreFreemium(),
+      maisAssistidosSemPodcast(10),
+      listarConteudos({ tipo: "AULA", limit: 12 }),
+      listarConteudos({ tipo: "PALESTRA", limit: 12 }),
+      listarConteudos({ tipo: "PODCAST", limit: 12 }),
       listarInstrutores(14),
     ]);
+
+  const categorias = (await listarTodasCategorias()) ?? [];
 
   // Já vem com título, capas e duração — sem precisar cruzar com o catálogo.
   const continuar = await emAndamento(10);
 
-  const heroi = destaques.data[0] ?? top10Aulas.data[0] ?? null;
-  const outrosDestaques = destaques.data.slice(1);
+  /*
+   * Mesmo dado do trilho acima, indexado por conteúdo: é o que marca com a
+   * barra de continuação os cards que se repetem nos demais trilhos. A chamada
+   * é deduplicada por requisição, então não custa uma ida extra à API.
+   */
+  const progresso = await mapaDeProgresso();
 
-  const faixasGratuitas = freemium
-    .map((categoria) => ({
-      id: categoria.id,
-      nome: categoria.categoria,
-      conteudos: categoria.subcategorias.flatMap((sub) => sub.conteudos),
-    }))
-    .filter((faixa) => faixa.conteudos.length > 0);
+  /*
+   * Até 3 destaques viram slides do topo; o restante segue no trilho abaixo,
+   * para não repetir os mesmos conteúdos nas duas áreas.
+   */
+  const paraSlide = (destaques.data.length > 0 ? destaques.data : maisAssistidos)
+    .slice(0, 3)
+    .map((conteudo) => {
+      const segundos = duracaoTotal(conteudo);
+      return {
+        id: conteudo.id,
+        titulo: conteudo.titulo,
+        descricao: conteudo.descricao ? resumir(conteudo.descricao, 220) : null,
+        capa: conteudo.thumbnailDestaque ?? capaDoConteudo(conteudo),
+        tipo: rotuloTipo(conteudo.tipo),
+        duracao: segundos > 0 ? formatarDuracao(segundos) : null,
+        instrutor: conteudo.instrutores?.[0]?.instrutor?.nome ?? null,
+      };
+    });
+
+  const idsNoSlide = new Set(paraSlide.map((slide) => slide.id));
+  const outrosDestaques = destaques.data.filter((c) => !idsNoSlide.has(c.id));
 
   return (
     <div className="flex flex-col gap-10 pb-8 sm:gap-14">
-      {heroi && <HeroiCatalogo conteudo={heroi} />}
+      <HeroiSlide slides={paraSlide} />
 
       {continuar.length > 0 && (
         <Trilho
@@ -60,6 +82,14 @@ export async function Catalogo() {
               conteudo={paraCard(item)}
               progresso={item.percentualAssistido}
               duracaoSegundos={item.duracao}
+              /*
+               * Abre já no player: a página do conteúdo recebe `?assistir=1` e
+               * sobe o vídeo em tela cheia. Fechar deixa a pessoa na ficha,
+               * sem navegação extra.
+               */
+              href={`/conteudo/${item.conteudoId}?assistir=1`}
+              orientacao="horizontal"
+              largura="card-trilho-largo"
             />
           ))}
         </Trilho>
@@ -68,31 +98,113 @@ export async function Catalogo() {
       {outrosDestaques.length > 0 && (
         <Trilho titulo="Em destaque" descricao="Selecionados pela curadoria">
           {outrosDestaques.map((conteudo) => (
-            <CardConteudo key={conteudo.id} conteudo={conteudo} />
+            <CardConteudo
+              key={conteudo.id}
+              conteudo={conteudo}
+              progresso={progresso.get(conteudo.id)}
+            />
           ))}
         </Trilho>
       )}
 
-      {top10Aulas.data.length > 0 && (
-        <Trilho titulo="Aulas mais assistidas">
-          {top10Aulas.data.map((conteudo) => (
-            <CardConteudo key={conteudo.id} conteudo={conteudo} />
+      {/*
+        Sem "ver mais": o trilho já é a lista inteira, não um recorte dela. O
+        `slice` garante os 10 mesmo se o endpoint passar a devolver mais.
+      */}
+      {maisAssistidos.length > 0 && (
+        <Trilho titulo="Conteúdos mais assistidos">
+          {maisAssistidos.map((conteudo, indice) => (
+            <CardConteudo
+              key={conteudo.id}
+              conteudo={conteudo}
+              progresso={progresso.get(conteudo.id)}
+              numero={indice + 1}
+            />
           ))}
         </Trilho>
       )}
 
-      {faixasGratuitas.map((faixa) => (
-        <Trilho key={faixa.id} titulo={faixa.nome}>
-          {faixa.conteudos.map((conteudo) => (
-            <CardConteudo key={conteudo.id} conteudo={conteudo} />
+      {aulas.data.length > 0 && (
+        <Trilho
+          titulo="Aulas"
+          descricao="Cursos e super aulas para aplicar no dia a dia"
+          verMais={{ href: "/tipo/aula", rotulo: "Ver todas" }}
+        >
+          {aulas.data.map((conteudo) => (
+            <CardConteudo
+              key={conteudo.id}
+              conteudo={conteudo}
+              progresso={progresso.get(conteudo.id)}
+            />
           ))}
         </Trilho>
-      ))}
+      )}
 
-      {top10Podcasts.data.length > 0 && (
-        <Trilho titulo="Podcasts" descricao="Conversas com quem faz acontecer">
-          {top10Podcasts.data.map((conteudo) => (
-            <CardConteudo key={conteudo.id} conteudo={conteudo} />
+      {palestras.data.length > 0 && (
+        <Trilho
+          titulo="Palestras"
+          descricao="Replays de quem já escalou empresas"
+          verMais={{ href: "/tipo/palestra", rotulo: "Ver todas" }}
+        >
+          {palestras.data.map((conteudo) => (
+            <CardConteudo
+              key={conteudo.id}
+              conteudo={conteudo}
+              progresso={progresso.get(conteudo.id)}
+            />
+          ))}
+        </Trilho>
+      )}
+
+      {podcasts.data.length > 0 && (
+        <Trilho
+          titulo="Podcasts"
+          descricao="Conversas com quem faz acontecer"
+          verMais={{ href: "/tipo/podcast", rotulo: "Ver todos" }}
+        >
+          {podcasts.data.map((conteudo) => (
+            <CardConteudo
+              key={conteudo.id}
+              conteudo={conteudo}
+              progresso={progresso.get(conteudo.id)}
+            />
+          ))}
+        </Trilho>
+      )}
+
+      {categorias.length > 0 && (
+        <Trilho titulo="Categorias" descricao="Navegue pelo acervo por assunto">
+          {categorias.map((categoria) => (
+            <Link
+              key={categoria.id}
+              href={`/categoria/${categoria.id}`}
+              className="border-borda-suave bg-superficie hover:border-acento/60 hover:bg-superficie-2 ease-suave group card-trilho-estreito flex flex-col items-center gap-2.5 rounded-xl border p-3 text-center transition-[border-color,background-color,transform] duration-200 active:scale-[0.98] sm:gap-3 sm:p-4"
+            >
+              <span
+                aria-hidden="true"
+                className="bg-acento-claro/15 text-acento-claro flex h-10 w-10 shrink-0 items-center justify-center rounded-lg sm:h-11 sm:w-11"
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {iconeDaCategoria(categoria.nome)}
+                </svg>
+              </span>
+              {/*
+                Centrado e em coluna: a caixa larga anterior (192px fixos) não
+                cabe em três colunas de celular, e nome comprido como "Captação
+                de recursos" precisa das duas linhas.
+              */}
+              <span className="group-hover:text-acento line-clamp-2 text-xs leading-snug font-semibold transition-colors sm:text-sm">
+                {categoria.nome}
+              </span>
+            </Link>
           ))}
         </Trilho>
       )}
@@ -103,15 +215,15 @@ export async function Catalogo() {
             <Link
               key={instrutor.id}
               href={`/instrutor/${instrutor.id}`}
-              className="border-borda-suave bg-superficie hover:border-acento/60 ease-suave flex w-52 shrink-0 flex-col items-center gap-3 rounded-xl border p-5 text-center transition-[border-color,transform] duration-200 active:scale-[0.98]"
+              className="border-borda-suave bg-superficie hover:border-acento/60 ease-suave card-trilho-estreito flex flex-col items-center gap-2.5 rounded-xl border p-3 text-center transition-[border-color,transform] duration-200 active:scale-[0.98] sm:gap-3 sm:p-4"
             >
-              <div className="bg-superficie-2 relative h-20 w-20 overflow-hidden rounded-full">
+              <div className="bg-superficie-2 relative h-14 w-14 shrink-0 overflow-hidden rounded-full sm:h-16 sm:w-16 lg:h-20 lg:w-20">
                 {instrutor.avatar ? (
                   <Image
                     src={instrutor.avatar}
                     alt=""
                     fill
-                    sizes="80px"
+                    sizes="(max-width: 640px) 56px, 80px"
                     className="object-cover"
                   />
                 ) : (
@@ -121,9 +233,12 @@ export async function Catalogo() {
                 )}
               </div>
               <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold">{instrutor.nome}</p>
+                <p className="line-clamp-2 text-xs leading-snug font-semibold sm:text-sm">
+                  {instrutor.nome}
+                </p>
+                {/* A formação não cabe legível nos ~100px do celular. */}
                 {instrutor.formacao && (
-                  <p className="text-texto-3 line-clamp-3 text-xs leading-snug">
+                  <p className="text-texto-3 line-clamp-2 hidden text-xs leading-snug sm:block">
                     {instrutor.formacao}
                   </p>
                 )}
@@ -135,62 +250,3 @@ export async function Catalogo() {
     </div>
   );
 }
-
-function HeroiCatalogo({ conteudo }: { conteudo: Conteudo }) {
-  const capa = conteudo.thumbnailDestaque ?? capaDoConteudo(conteudo);
-  const duracao = duracaoTotal(conteudo);
-  const instrutor = conteudo.instrutores?.[0]?.instrutor;
-
-  return (
-    <section className="relative min-h-[340px] overflow-hidden sm:min-h-[420px] lg:min-h-[500px]">
-      {capa && (
-        <Image
-          src={capa}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="animate-surgir object-cover object-center"
-        />
-      )}
-      <div className="veu-heroi absolute inset-0" />
-
-      <div className="calha relative flex w-full flex-col justify-end gap-4 pt-20 pb-10 sm:gap-5 sm:pt-24 sm:pb-12">
-        <div className="flex flex-wrap items-center gap-2">
-          <Selo variacao="acento">{rotuloTipo(conteudo.tipo)}</Selo>
-          {conteudo.level && <Selo>{conteudo.level}</Selo>}
-          {duracao > 0 && <Selo>{formatarDuracao(duracao)}</Selo>}
-        </div>
-
-        <h1 className="font-display max-w-3xl text-2xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
-          {conteudo.titulo}
-        </h1>
-
-        {conteudo.descricao && (
-          <p className="text-texto-2 line-clamp-3 max-w-xl text-sm leading-relaxed sm:line-clamp-none sm:text-base">
-            {resumir(conteudo.descricao, 220)}
-          </p>
-        )}
-
-        {instrutor && (
-          <p className="text-texto-3 text-sm">
-            com <span className="text-texto-2 font-medium">{instrutor.nome}</span>
-          </p>
-        )}
-
-        <div className="pt-1">
-          <Link
-            href={`/conteudo/${conteudo.id}`}
-            className="bg-acento text-fundo hover:bg-acento-hover ease-suave inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-sm font-bold transition-all duration-200 hover:gap-3 active:scale-95"
-          >
-            <svg viewBox="0 0 16 16" aria-hidden="true" className="h-4 w-4" fill="currentColor">
-              <path d="M4 2.5v11l9-5.5-9-5.5Z" />
-            </svg>
-            Assistir agora
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-

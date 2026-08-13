@@ -10,12 +10,48 @@ export function formatarDuracao(segundos: number | null | undefined): string {
   return `${horas} h ${minutos} min`;
 }
 
-/** Soma a duração de todos os vídeos de um conteúdo. */
-export function duracaoTotal(conteudo: Pick<Conteudo, "videos" | "duracao">): number {
-  if (typeof conteudo.duracao === "number" && conteudo.duracao > 0) {
+/**
+ * Formato de relógio, como no player: 758 → "12:38" · 3735 → "1:02:15".
+ * Diferente de `formatarDuracao`, que arredonda para leitura em listagens.
+ */
+export function formatarRelogio(segundos: number | null | undefined): string {
+  const total = Math.max(0, Math.floor(segundos ?? 0));
+  const horas = Math.floor(total / 3600);
+  const minutos = Math.floor((total % 3600) / 60);
+  const resto = total % 60;
+
+  const doisDigitos = (n: number) => String(n).padStart(2, "0");
+
+  return horas > 0
+    ? `${horas}:${doisDigitos(minutos)}:${doisDigitos(resto)}`
+    : `${doisDigitos(minutos)}:${doisDigitos(resto)}`;
+}
+
+/**
+ * Soma a duração das aulas, contando cada vídeo uma única vez.
+ *
+ * NÃO usamos o campo `duracao` que a API devolve: um vídeo que pertence a um
+ * módulo aparece tanto em `videos[]` quanto em `modulos[].videos`, e o backend
+ * soma os dois arrays (`duracaoDireta + duracaoModulos`). O resultado é o
+ * dobro — em "Finanças Corporativas" o campo trazia 144m34s para 72m17s reais.
+ */
+export function duracaoTotal(
+  conteudo: Partial<Pick<Conteudo, "videos" | "modulos" | "duracao">>,
+): number {
+  const todos = [
+    ...(conteudo.videos ?? []),
+    ...(conteudo.modulos ?? []).flatMap((modulo) => modulo.videos ?? []),
+  ];
+
+  const porId = new Map(todos.map((video) => [video.id, video.duracao ?? 0]));
+  const soma = [...porId.values()].reduce((total, segundos) => total + segundos, 0);
+
+  // Sem lista de vídeos (listagens reduzidas), resta confiar no campo da API.
+  if (soma === 0 && typeof conteudo.duracao === "number") {
     return conteudo.duracao;
   }
-  return (conteudo.videos ?? []).reduce((soma, v) => soma + (v.duracao ?? 0), 0);
+
+  return soma;
 }
 
 export function formatarPreco(valor: number): string {
@@ -65,7 +101,22 @@ export function extrairVimeoId(caminho: string | null | undefined): string | nul
   return encontrado ? encontrado[1] : null;
 }
 
-/** Escolhe a melhor imagem disponível para um card. */
+/**
+ * Arte VERTICAL, usada nos cards. `thumbnailMobile` é a peça em retrato — no
+ * acervo ela vem em 850×971 (proporção 7/8, quase quadrada), que é a razão de
+ * o card usar `aspect-[7/8]`. A desktop entra só como reserva, e aí o recorte
+ * do card a corta no centro.
+ */
+export function capaVertical(
+  conteudo: Pick<
+    Conteudo | ConteudoResumo,
+    "thumbnailDesktop" | "thumbnailMobile"
+  >,
+): string | null {
+  return conteudo.thumbnailMobile ?? conteudo.thumbnailDesktop ?? null;
+}
+
+/** Arte horizontal — heróis e capas de topo. */
 export function capaDoConteudo(
   conteudo: Pick<
     Conteudo | ConteudoResumo,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Conteudo, ConteudoResumo } from "@/types/api";
 import {
   capaDoConteudo,
+  capaVertical,
   duracaoTotal,
   estaLiberado,
   formatarDuracao,
@@ -22,7 +23,8 @@ export function CardConteudo({
   progresso,
   duracaoSegundos,
   href,
-  bloqueado = false,
+  orientacao = "vertical",
+  numero,
 }: {
   conteudo: ConteudoDeCard;
   /** Duração informada por fora, quando a origem não traz a lista de vídeos. */
@@ -37,10 +39,32 @@ export function CardConteudo({
   progresso?: number;
   /** Destino do clique. Na vitrine pública, aponta para o login. */
   href?: string;
-  /** Mostra o cadeado indicando que é preciso entrar para assistir. */
-  bloqueado?: boolean;
+  /**
+   * `vertical` usa a arte em retrato (7/8), padrão do catálogo. `horizontal`
+   * usa a arte deitada em 16/9 — a mesma proporção do player, o que faz o
+   * trilho "Continue de onde parou" parecer a continuação da tela de aula.
+   * Combine com `largura="card-trilho-largo"`.
+   */
+  orientacao?: "vertical" | "horizontal";
+  /**
+   * Posição no ranking, desenhada no canto superior esquerdo. Só faz sentido
+   * em trilhos ordenados — nas grades comuns a numeração seria arbitrária.
+   */
+  numero?: number;
 }) {
-  const capa = capaDoConteudo(conteudo);
+  const deitado = orientacao === "horizontal";
+  /*
+   * Podcast é sempre quadrado, a convenção do formato — e a decisão sai do
+   * próprio conteúdo, não de quem chama. Em listas misturadas (busca,
+   * categoria, relacionados) o chamador não tem como saber o tipo de cada item.
+   *
+   * A arte em pé do acervo vem em 850×971, quase 1:1, então o recorte quadrado
+   * não perde nada de relevante.
+   */
+  const quadrado = conteudo.tipo === "PODCAST" && !deitado;
+
+  // A arte deitada mora em `thumbnailDesktop`; a em pé, em `thumbnailMobile`.
+  const capa = deitado ? capaDoConteudo(conteudo) : capaVertical(conteudo);
   const liberado = estaLiberado(conteudo);
   const duracao =
     duracaoSegundos ?? (temVideos(conteudo) ? duracaoTotal(conteudo) : 0);
@@ -51,13 +75,25 @@ export function CardConteudo({
       className={`group focus-visible:outline-acento ease-suave block shrink-0 transition-transform duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 ${largura}`}
     >
       <article className="flex w-full flex-col gap-2.5">
-        <div className="bg-superficie border-borda-suave group-hover:border-acento/60 group-hover:shadow-acento/10 ease-suave relative aspect-video overflow-hidden rounded-xl border transition-[border-color,box-shadow] duration-300 group-hover:shadow-lg">
+        <div
+          className={`bg-superficie border-borda-suave group-hover:border-acento/60 group-hover:shadow-acento/10 ease-suave relative overflow-hidden rounded-xl border transition-[border-color,box-shadow] duration-300 group-hover:shadow-lg ${
+            deitado
+              ? "aspect-video"
+              : quadrado
+                ? "aspect-square"
+                : "aspect-[7/8]"
+          }`}
+        >
           {capa ? (
             <Image
               src={capa}
               alt=""
               fill
-              sizes="(max-width: 768px) 45vw, (max-width: 1024px) 31vw, 24vw"
+              sizes={
+                deitado
+                  ? "(max-width: 768px) 85vw, (max-width: 1024px) 46vw, 31vw"
+                  : "(max-width: 768px) 45vw, (max-width: 1024px) 31vw, 24vw"
+              }
               className="ease-suave object-cover transition-transform duration-500 group-hover:scale-[1.05]"
             />
           ) : (
@@ -66,26 +102,16 @@ export function CardConteudo({
             </div>
           )}
 
-          {liberado && (
-            <span className="absolute top-2 left-2">
-              <Selo variacao="gratis">Grátis</Selo>
+          {typeof numero === "number" && (
+            <span className="bg-acento-claro text-fundo font-display absolute top-2 left-2 flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-sm font-bold tabular-nums">
+              {numero}
+              <span className="sr-only">º mais assistido</span>
             </span>
           )}
 
-          {bloqueado && (
-            <span className="bg-fundo/80 text-acento absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full">
-              <svg
-                viewBox="0 0 16 16"
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-              >
-                <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" />
-                <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
-              </svg>
-              <span className="sr-only">Entre para assistir</span>
+          {liberado && (
+            <span className="absolute top-2 right-2">
+              <Selo variacao="gratis">Grátis</Selo>
             </span>
           )}
 
@@ -97,11 +123,15 @@ export function CardConteudo({
 
           {typeof progresso === "number" && progresso > 0 && (
             <div
-              className="bg-fundo/70 absolute inset-x-0 bottom-0 h-1"
-              role="presentation"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(Math.min(progresso, 100))}
+              aria-label={`${Math.round(Math.min(progresso, 100))}% assistido`}
+              className="absolute inset-x-0 bottom-0 h-[5px] bg-black/45 backdrop-blur-[1px]"
             >
               <div
-                className="bg-acento h-full"
+                className="bg-acento-claro h-full shadow-[0_0_8px_0] shadow-acento-claro/50"
                 style={{ width: `${Math.min(progresso, 100)}%` }}
               />
             </div>
@@ -111,7 +141,6 @@ export function CardConteudo({
         <div className="flex flex-col gap-1">
           <span className="text-texto-3 text-[11px] font-semibold tracking-wider uppercase">
             {rotuloTipo(conteudo.tipo)}
-            {conteudo.level ? ` · ${conteudo.level}` : ""}
           </span>
           <h3 className="text-texto group-hover:text-acento-claro line-clamp-2 text-sm leading-snug font-semibold transition-colors">
             {conteudo.titulo}

@@ -12,6 +12,16 @@ export type GrupoNav = {
   itens: ItemNav[];
 };
 
+/**
+ * Site institucional, que vive fora deste projeto.
+ *
+ * A landing saiu daqui quando os domínios se separaram: `digitaleduca.com.vc`
+ * é o site, `plataforma.digitaleduca.com.vc` é este app. Toda ligação de volta
+ * para conteúdo de marketing passa por esta constante — assim uma eventual
+ * troca de domínio é um ponto só.
+ */
+export const SITE_INSTITUCIONAL = "https://digitaleduca.com.vc";
+
 /** Rotas de listagem por tipo: /tipo/aula, /tipo/palestra, /tipo/podcast. */
 export const TIPOS_NA_URL: Record<string, TipoConteudo> = {
   aula: "AULA",

@@ -10,7 +10,7 @@ export function BotaoSair({ compacto = false }: { compacto?: boolean }) {
   function sair() {
     iniciarSaida(async () => {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.replace("/entrar");
+      router.replace("/");
       router.refresh();
     });
   }

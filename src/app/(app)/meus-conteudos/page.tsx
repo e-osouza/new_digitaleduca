@@ -33,13 +33,16 @@ export default async function MeusConteudos() {
           </div>
           <Link
             href="/inicio"
-            className="bg-acento text-fundo hover:bg-acento-hover rounded-full px-5 py-2.5 text-sm font-bold transition-colors"
+            className="bg-acento text-white hover:bg-acento-hover rounded-full px-5 py-2.5 text-sm font-bold transition-colors"
           >
             Explorar o catálogo
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        // Teto de 4 colunas. A arte é deitada, como no trilho da home de onde
+        // esta página é o "Ver tudo": uma quinta coluna estreitaria demais o
+        // 16/9, e no celular dois cards lado a lado ficariam ilegíveis.
+        <div className="xs:grid-cols-2 grid grid-cols-1 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
           {itens.map((item) => (
             <CardConteudo
               key={item.conteudoId}
@@ -47,6 +50,13 @@ export default async function MeusConteudos() {
               largura="w-full"
               progresso={item.percentualAssistido}
               duracaoSegundos={item.duracao}
+              /*
+               * Numa lista chamada "Continuar assistindo" o clique tem de voltar
+               * a tocar. `?assistir=1` abre o player em tela cheia sobre a ficha
+               * do conteúdo — ao fechar, a pessoa fica nela.
+               */
+              href={`/conteudo/${item.conteudoId}?assistir=1`}
+              orientacao="horizontal"
             />
           ))}
         </div>

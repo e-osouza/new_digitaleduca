@@ -34,7 +34,8 @@ export function proxy(request: NextRequest) {
   // autoridade sobre a validade do token.
   if (request.cookies.has(NOME_COOKIE_SESSAO)) return NextResponse.next();
 
-  const destino = new URL("/entrar", request.url);
+  // A raiz é a tela de login; `/entrar` existe só como apelido.
+  const destino = new URL("/", request.url);
   destino.searchParams.set("proximo", `${pathname}${search}`);
   return NextResponse.redirect(destino);
 }

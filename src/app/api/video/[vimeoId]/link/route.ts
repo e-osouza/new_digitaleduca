@@ -17,9 +17,23 @@ export async function GET(
   }
 
   try {
-    const { url, sources } = await linkDoVideo(vimeoId);
-    // `sources` carrega o tipo declarado de cada fonte; o player depende dele.
-    return NextResponse.json({ url, sources: sources ?? [] });
+    const { url, sources, textTracks } = await linkDoVideo(vimeoId);
+    /*
+     * `sources` carrega o tipo declarado de cada fonte; o player depende dele.
+     * As legendas vão com a URL já reescrita para o nosso proxy — o <track> do
+     * navegador não envia o cabeçalho de autenticação que a API exige.
+     */
+    return NextResponse.json({
+      url,
+      sources: sources ?? [],
+      legendas: (textTracks ?? []).map((faixa) => ({
+        id: faixa.id,
+        label: faixa.label,
+        language: faixa.language,
+        kind: faixa.kind,
+        src: `/api/video/${vimeoId}/legenda/${faixa.id}`,
+      })),
+    });
   } catch (erro) {
     if (!(erro instanceof ApiError)) throw erro;
 

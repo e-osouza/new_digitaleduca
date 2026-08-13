@@ -12,7 +12,7 @@ export function Esqueleto({ className = "" }: { className?: string }) {
 export function EsqueletoCard({ largura = "card-trilho" }: { largura?: string }) {
   return (
     <div className={`${largura} flex shrink-0 flex-col gap-2.5`}>
-      <Esqueleto className="aspect-video w-full rounded-xl" />
+      <Esqueleto className="aspect-[7/8] w-full rounded-xl" />
       <Esqueleto className="h-3 w-20" />
       <Esqueleto className="h-4 w-full" />
       <Esqueleto className="h-4 w-2/3" />

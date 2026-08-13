@@ -3,6 +3,7 @@ import { api, ApiError } from "@/lib/api";
 import { normalizarMe } from "@/lib/queries";
 import { encerrarSessaoExpirada } from "@/lib/sessao-expirada";
 import { AppShell } from "@/components/app-shell";
+import { saudacao } from "@/lib/saudacao";
 import { AvisoEmail } from "@/components/aviso-email";
 import type { MeResponse } from "@/types/api";
 
@@ -39,7 +40,11 @@ export default async function LayoutApp({
 
   return (
     <Suspense>
-      <AppShell nome={usuario?.nome ?? null} email={usuario?.email ?? null}>
+      <AppShell
+        nome={usuario?.nome ?? null}
+        email={usuario?.email ?? null}
+        saudacao={saudacao(usuario?.nome ?? null)}
+      >
         {precisaConfirmar && <AvisoEmail />}
         {children}
       </AppShell>

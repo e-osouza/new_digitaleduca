@@ -11,7 +11,7 @@ import { NOME_COOKIE_SESSAO } from "@/lib/session";
 export function GET(request: NextRequest) {
   const proximo = request.nextUrl.searchParams.get("proximo");
 
-  const destino = new URL("/entrar", request.url);
+  const destino = new URL("/", request.url);
   if (proximo?.startsWith("/")) destino.searchParams.set("proximo", proximo);
   destino.searchParams.set("expirada", "1");
 

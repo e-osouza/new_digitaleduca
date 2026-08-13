@@ -23,7 +23,12 @@ export const metadata: Metadata = {
   },
   description:
     "Sua plataforma de educação corporativa com cursos, palestras e conteúdos exclusivos.",
-  icons: { icon: "/logo/favicon.png" },
+  /*
+   * Sem `icons` aqui: `app/icon.png` e `app/apple-icon.png` são convenções de
+   * arquivo do Next, que já emite os <link> com tipo, tamanho e hash de cache.
+   * Declarar também por metadata produziria duas tags para o mesmo ícone — e
+   * era o `favicon.ico` do template, que vinha antes, que o navegador escolhia.
+   */
 };
 
 export const viewport: Viewport = {

@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ erro: mensagem }, { status: criacao.status });
   }
 
-  // Login automático. Se falhar, a conta existe — mandamos o usuário para /entrar.
+  // Login automático. Se falhar, a conta existe — mandamos o usuário ao login.
   const login = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

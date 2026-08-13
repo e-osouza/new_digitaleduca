@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo } from "@/components/campo";
+import { CampoSenha } from "@/components/campo-senha";
 
 export function FormularioLogin({ proximo = "/inicio" }: { proximo?: string }) {
   const router = useRouter();
@@ -53,15 +54,15 @@ export function FormularioLogin({ proximo = "/inicio" }: { proximo?: string }) {
         type="email"
         autoComplete="email"
         required
+        autoFocus
         placeholder="voce@exemplo.com"
       />
 
       <div className="flex flex-col gap-1.5">
-        <Campo
+        <CampoSenha
           id="senha"
           name="senha"
           rotulo="Senha"
-          type="password"
           autoComplete="current-password"
           required
           placeholder="••••••••"
@@ -77,7 +78,7 @@ export function FormularioLogin({ proximo = "/inicio" }: { proximo?: string }) {
       <button
         type="submit"
         disabled={enviando}
-        className="bg-acento text-fundo hover:bg-acento-claro mt-2 rounded-full px-6 py-3 text-sm font-bold transition-colors disabled:opacity-60"
+        className="bg-acento text-white hover:bg-acento-hover mt-2 rounded-full px-6 py-3 text-sm font-bold transition-colors disabled:opacity-60"
       >
         {enviando ? "Entrando…" : "Entrar"}
       </button>

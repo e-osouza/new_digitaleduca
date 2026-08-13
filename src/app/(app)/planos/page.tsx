@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { listarPlanos, normalizarMe, obterMe } from "@/lib/queries";
 import { formatarPreco } from "@/lib/format";
 import { FAIXA } from "@/lib/ui";
@@ -20,9 +21,25 @@ const INTERVALOS: Record<string, string> = {
   year: "por ano",
 };
 
-export default async function PaginaPlanos() {
-  const [planos, me] = await Promise.all([listarPlanos(), obterMe()]);
+export default async function PaginaPlanos({
+  searchParams,
+}: {
+  searchParams: Promise<{ conteudo?: string }>;
+}) {
+  const [planos, me, { conteudo }] = await Promise.all([
+    listarPlanos(),
+    obterMe(),
+    searchParams,
+  ]);
   const { temAssinaturaAtiva, ehCortesia } = normalizarMe(me);
+
+  /*
+   * `?conteudo=` marca quem foi trazido de um "Assistir" que a API recusou.
+   * Sem essa pista a pessoa cairia numa tabela de preços sem entender por que
+   * saiu do vídeo — e sem caminho de volta para o que queria ver.
+   */
+  const bloqueadoId = Number(conteudo);
+  const veioDeBloqueio = Number.isInteger(bloqueadoId) && bloqueadoId > 0;
 
   const pagos = planos
     .filter((plano) => plano.preco > 0)
@@ -42,6 +59,46 @@ export default async function PaginaPlanos() {
               : "Libere o acervo completo e os conteúdos novos de cada quinzena."}
         </p>
       </header>
+
+      {veioDeBloqueio && !temAssinaturaAtiva && !ehCortesia && (
+        <div className="border-acento/40 bg-acento/10 flex flex-col items-start gap-3 rounded-xl border p-5">
+          <div className="flex items-start gap-3">
+            <span
+              aria-hidden="true"
+              className="bg-acento-claro/15 text-acento-claro mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+            >
+              <svg
+                viewBox="0 0 20 20"
+                className="h-4.5 w-4.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="4" y="8.5" width="12" height="8" rx="2" />
+                <path d="M6.75 8.5V6a3.25 3.25 0 0 1 6.5 0v2.5" />
+              </svg>
+            </span>
+            <div className="flex flex-col gap-1">
+              <p className="text-texto font-semibold">
+                Esta aula é exclusiva para assinantes
+              </p>
+              <p className="text-texto-2 text-sm leading-relaxed">
+                Escolha um plano abaixo para liberar o acervo completo. Você
+                volta direto para o conteúdo depois.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href={`/conteudo/${bloqueadoId}`}
+            className="text-acento hover:text-acento-claro text-sm font-semibold transition-colors"
+          >
+            ← Voltar para o conteúdo
+          </Link>
+        </div>
+      )}
 
       {pagos.length === 0 ? (
         <p className="border-borda-suave text-texto-3 rounded-xl border border-dashed p-5 text-sm">
@@ -106,7 +163,7 @@ export default async function PaginaPlanos() {
                   rel="noopener noreferrer"
                   className={`mt-auto flex min-h-12 items-center justify-center rounded-full px-6 text-sm font-bold transition-colors ${
                     destaque
-                      ? "bg-acento text-fundo hover:bg-acento-hover"
+                      ? "bg-acento text-white hover:bg-acento-hover"
                       : "border-borda text-texto hover:border-acento/60 hover:bg-superficie border"
                   }`}
                 >

@@ -26,7 +26,7 @@ export default async function VerificarEmail() {
           <p className="text-sucesso font-semibold">Seu e-mail já está confirmado.</p>
           <Link
             href="/inicio"
-            className="bg-acento text-fundo hover:bg-acento-hover flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition-colors"
+            className="bg-acento text-white hover:bg-acento-hover flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition-colors"
           >
             Voltar ao início
           </Link>

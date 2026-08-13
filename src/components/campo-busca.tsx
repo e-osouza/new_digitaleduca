@@ -59,7 +59,7 @@ export function CampoBusca({
 
       <button
         type="submit"
-        className="bg-acento text-fundo hover:bg-acento-hover absolute top-1/2 right-2 flex h-10 -translate-y-1/2 items-center rounded-full px-5 text-sm font-bold transition-colors"
+        className="bg-acento text-white hover:bg-acento-hover absolute top-1/2 right-2 flex h-10 -translate-y-1/2 items-center rounded-full px-5 text-sm font-bold transition-colors"
       >
         Buscar
       </button>

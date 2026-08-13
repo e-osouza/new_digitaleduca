@@ -137,6 +137,16 @@ const GRUPOS: GrupoNav[] = [
     titulo: "Conta",
     itens: [
       {
+        href: "/perfil",
+        rotulo: "Meu perfil",
+        icone: (
+          <>
+            <circle cx="10" cy="6.5" r="3" />
+            <path d="M3.5 17c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
+          </>
+        ),
+      },
+      {
         href: "/planos",
         rotulo: "Planos",
         icone: (
@@ -163,10 +173,13 @@ const GRUPOS: GrupoNav[] = [
 export function AppShell({
   nome,
   email,
+  saudacao,
   children,
 }: {
   nome: string | null;
   email: string | null;
+  /** Já resolvida no servidor — ver `lib/saudacao`. */
+  saudacao: { texto: string; periodo: "dia" | "noite" };
   children: React.ReactNode;
 }) {
   const caminho = usePathname();
@@ -256,9 +269,41 @@ export function AppShell({
             <Marca altura={20} />
           </Link>
 
+          {/*
+            Só a partir de `lg`: abaixo disso o cabeçalho já tem o botão do
+            menu, a marca, a busca e o atalho do app, e a saudação espremeria
+            todos. Ali o menu lateral não existe, então a esquerda está ocupada.
+          */}
+          <p className="text-texto hidden items-center gap-2 truncate text-base font-semibold lg:flex">
+            <IconeSaudacao periodo={saudacao.periodo} />
+            {saudacao.texto}
+          </p>
+
           {/* Sair vive apenas no rodapé do menu lateral, para não duplicar. */}
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <BuscaRapida />
+
+            <Link
+              href="/aplicativo"
+              title="Baixe o aplicativo"
+              className="border-borda text-texto-2 hover:border-acento/60 hover:bg-superficie-2 hover:text-texto flex h-11 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition-colors sm:px-4"
+            >
+              <svg
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="6" y="2.5" width="8" height="15" rx="2" />
+                <path d="M9 15.2h2" />
+              </svg>
+              <span className="hidden sm:inline">Baixe o app</span>
+              <span className="sr-only sm:hidden">Baixe o aplicativo</span>
+            </Link>
           </div>
         </header>
 
@@ -426,6 +471,31 @@ function Navegacao({
         <BotaoSair compacto={recolhido} />
       </div>
     </aside>
+  );
+}
+
+/** Sol de dia, lua à noite. Decorativo: a saudação ao lado já diz o período. */
+function IconeSaudacao({ periodo }: { periodo: "dia" | "noite" }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      className="text-acento h-[18px] w-[18px] shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {periodo === "noite" ? (
+        <path d="M16.5 12.4A7 7 0 0 1 7.6 3.5a7 7 0 1 0 8.9 8.9Z" />
+      ) : (
+        <>
+          <circle cx="10" cy="10" r="3.6" />
+          <path d="M10 1.8v1.8M10 16.4v1.8M18.2 10h-1.8M3.6 10H1.8M15.8 4.2l-1.3 1.3M5.5 14.5l-1.3 1.3M15.8 15.8l-1.3-1.3M5.5 5.5 4.2 4.2" />
+        </>
+      )}
+    </svg>
   );
 }
 

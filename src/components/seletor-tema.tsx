@@ -101,7 +101,9 @@ function Amostra({ tema }: { tema: Tema }) {
       <span className="flex flex-1 flex-col justify-center gap-1 px-1.5">
         <span
           className="h-1 w-full rounded-full"
-          style={{ background: claro ? "#0d7ba6" : "#14bade" }}
+          // Espelha `--color-acento` de cada tema. Fixo porque a miniatura
+          // mostra o tema oposto ao vigente, e o token resolveria pelo atual.
+          style={{ background: claro ? "#00324e" : "#0093e6" }}
         />
         <span
           className="h-1 w-2/3 rounded-full"

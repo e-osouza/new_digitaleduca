@@ -86,8 +86,8 @@ export function FormularioRecuperarSenha() {
         </p>
         <button
           type="button"
-          onClick={() => router.replace("/entrar")}
-          className="bg-acento text-fundo hover:bg-acento-hover min-h-12 rounded-full px-6 text-sm font-bold transition-colors"
+          onClick={() => router.replace("/")}
+          className="bg-acento text-white hover:bg-acento-hover min-h-12 rounded-full px-6 text-sm font-bold transition-colors"
         >
           Ir para o login
         </button>
@@ -164,7 +164,7 @@ export function FormularioRecuperarSenha() {
       <button
         type="submit"
         disabled={enviando}
-        className="bg-acento text-fundo hover:bg-acento-hover mt-2 min-h-12 rounded-full px-6 text-sm font-bold transition-colors disabled:opacity-60"
+        className="bg-acento text-white hover:bg-acento-hover mt-2 min-h-12 rounded-full px-6 text-sm font-bold transition-colors disabled:opacity-60"
       >
         {enviando
           ? "Enviando…"
@@ -177,7 +177,7 @@ export function FormularioRecuperarSenha() {
 
       <p className="text-texto-3 text-center text-sm">
         Lembrou a senha?{" "}
-        <Link href="/entrar" className="text-acento hover:text-acento-hover font-semibold">
+        <Link href="/" className="text-acento hover:text-acento-hover font-semibold">
           Entrar
         </Link>
       </p>

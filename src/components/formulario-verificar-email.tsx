@@ -103,7 +103,7 @@ export function FormularioVerificarEmail({ email }: { email: string }) {
         <button
           type="submit"
           disabled={enviando}
-          className="bg-acento text-fundo hover:bg-acento-hover min-h-11 rounded-full px-6 text-sm font-bold transition-colors disabled:opacity-60"
+          className="bg-acento text-white hover:bg-acento-hover min-h-11 rounded-full px-6 text-sm font-bold transition-colors disabled:opacity-60"
         >
           {enviando ? "Confirmando…" : "Confirmar e-mail"}
         </button>

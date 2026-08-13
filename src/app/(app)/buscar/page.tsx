@@ -2,11 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ApiError } from "@/lib/api";
 import { encerrarSessaoExpirada } from "@/lib/sessao-expirada";
-import { buscarConteudos } from "@/lib/queries";
+import {
+  buscarConteudos,
+  listarSubcategorias,
+  listarTodasCategorias,
+  mapaDeProgresso,
+  sugestoesIniciais,
+} from "@/lib/queries";
+import { iconeDaCategoria } from "@/lib/icones-categoria";
 import { CardConteudo } from "@/components/card-conteudo";
 import { CampoBusca } from "@/components/campo-busca";
+import { FiltrosBusca } from "@/components/filtros-busca";
 import { Paginacao } from "@/components/paginacao";
-import type { Conteudo, TipoConteudo } from "@/types/api";
+import type {
+  Categoria,
+  Conteudo,
+  Subcategoria,
+  TipoConteudo,
+} from "@/types/api";
 
 export const metadata: Metadata = { title: "Buscar" };
 
@@ -23,19 +36,121 @@ const FILTROS: { rotulo: string; valor?: TipoConteudo }[] = [
 export default async function Buscar({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; tipo?: string; pagina?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    tipo?: string;
+    pagina?: string;
+    categoriaId?: string;
+    subcategoriaId?: string;
+  }>;
 }) {
-  const { q, tipo, pagina } = await searchParams;
+  const { q, tipo, pagina, categoriaId, subcategoriaId } = await searchParams;
   const termo = q?.trim() ?? "";
   const tipoValido = FILTROS.find((f) => f.valor === tipo)?.valor;
   const paginaAtual = Math.max(1, Number(pagina) || 1);
+  const categoria = Number(categoriaId) || undefined;
+  const subcategoria = Number(subcategoriaId) || undefined;
 
+  const [categorias, subcategorias, progresso] = await Promise.all([
+    listarTodasCategorias(),
+    listarSubcategorias(),
+    mapaDeProgresso(),
+  ]);
+
+  /*
+   * Sem termo a tela abria só com uma frase. Preenchemos com destaques para
+   * que a busca já sirva de vitrine — quem chega aqui sem saber o que procurar
+   * tem por onde começar em vez de encarar um vazio.
+   */
   if (termo.length === 0) {
+    const sugestoes = await sugestoesIniciais(POR_PAGINA);
+
     return (
-      <Moldura termo="" tipoAtivo={undefined}>
-        <p className="text-texto-3 text-sm">
-          Digite algo acima para encontrar aulas, palestras e podcasts.
-        </p>
+      <Moldura
+        termo=""
+        tipoAtivo={undefined}
+        categorias={categorias ?? []}
+        subcategorias={subcategorias ?? []}
+      >
+        <div className="flex flex-col gap-8 sm:gap-10">
+          {/*
+            Categorias vêm antes dos destaques: quem abre "Explorar" sem digitar
+            nada está navegando por assunto, não procurando um título. Elas já
+            eram carregadas para os filtros — aqui é a mesma lista, sem chamada
+            extra à API.
+          */}
+          {(categorias ?? []).length > 0 && (
+            <section className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-texto font-display text-lg font-semibold tracking-tight">
+                  Categorias
+                </h2>
+                <p className="text-texto-3 text-sm">
+                  Navegue pelo acervo por assunto.
+                </p>
+              </div>
+
+              <ul className="xs:grid-cols-2 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {(categorias ?? []).map((categoria) => (
+                  <li key={categoria.id}>
+                    <Link
+                      href={`/categoria/${categoria.id}`}
+                      className="border-borda-suave bg-superficie hover:border-acento/60 hover:bg-superficie-2 ease-suave group flex h-full items-center gap-3 rounded-xl border p-4 transition-[border-color,background-color,transform] duration-200 active:scale-[0.98]"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="bg-acento-claro/15 text-acento-claro flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      >
+                        <svg
+                          viewBox="0 0 20 20"
+                          className="h-4.5 w-4.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          {iconeDaCategoria(categoria.nome)}
+                        </svg>
+                      </span>
+                      <span className="group-hover:text-acento text-sm leading-snug font-semibold transition-colors">
+                        {categoria.nome}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {sugestoes.length === 0 ? (
+            <p className="text-texto-3 text-sm">
+              Digite algo acima para encontrar aulas, palestras e podcasts.
+            </p>
+          ) : (
+            <section className="flex flex-col gap-4 sm:gap-5">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-texto font-display text-lg font-semibold tracking-tight">
+                  Em destaque
+                </h2>
+                <p className="text-texto-3 text-sm">
+                  Digite acima para buscar, ou comece por aqui.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+                {sugestoes.map((conteudo) => (
+                  <CardConteudo
+                    key={conteudo.id}
+                    conteudo={conteudo}
+                    largura="w-full"
+                    progresso={progresso.get(conteudo.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
       </Moldura>
     );
   }
@@ -48,6 +163,8 @@ export default async function Buscar({
     const resposta = await buscarConteudos({
       q: termo,
       tipo: tipoValido,
+      categoriaId: categoria,
+      subcategoriaId: subcategoria,
       page: paginaAtual,
       limit: POR_PAGINA,
     });
@@ -63,7 +180,15 @@ export default async function Buscar({
   }
 
   return (
-    <Moldura termo={termo} tipoAtivo={tipoValido} total={total}>
+    <Moldura
+      termo={termo}
+      tipoAtivo={tipoValido}
+      total={total}
+      categorias={categorias ?? []}
+      subcategorias={subcategorias ?? []}
+      categoriaAtual={categoria}
+      subcategoriaAtual={subcategoria}
+    >
       {resultados.length === 0 ? (
         <div className="flex flex-col gap-2">
           <p className="text-texto font-semibold">
@@ -81,6 +206,7 @@ export default async function Buscar({
                 key={conteudo.id}
                 conteudo={conteudo}
                 largura="w-full"
+                progresso={progresso.get(conteudo.id)}
               />
             ))}
           </div>
@@ -89,7 +215,12 @@ export default async function Buscar({
             base="/buscar"
             pagina={paginaAtual}
             totalPaginas={totalPaginas}
-            parametros={{ q: termo, tipo: tipoValido }}
+            parametros={{
+              q: termo,
+              tipo: tipoValido,
+              categoriaId: categoria ? String(categoria) : undefined,
+              subcategoriaId: subcategoria ? String(subcategoria) : undefined,
+            }}
           />
         </>
       )}
@@ -101,11 +232,19 @@ function Moldura({
   termo,
   tipoAtivo,
   total,
+  categorias,
+  subcategorias,
+  categoriaAtual,
+  subcategoriaAtual,
   children,
 }: {
   termo: string;
   tipoAtivo?: TipoConteudo;
   total?: number;
+  categorias: Categoria[];
+  subcategorias: Subcategoria[];
+  categoriaAtual?: number;
+  subcategoriaAtual?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -118,12 +257,27 @@ function Moldura({
         <CampoBusca termoInicial={termo} tipo={tipoAtivo} />
 
         {termo && (
+          <FiltrosBusca
+            categorias={categorias}
+            subcategorias={subcategorias}
+            termo={termo}
+            tipo={tipoAtivo}
+            categoriaAtual={categoriaAtual}
+            subcategoriaAtual={subcategoriaAtual}
+          />
+        )}
+
+        {termo && (
           /* No celular os filtros deslizam na horizontal em vez de quebrar linha. */
           <div className="trilho -mx-5 flex items-center gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             {FILTROS.map((filtro) => {
               const ativo = filtro.valor === tipoAtivo;
               const parametros = new URLSearchParams({ q: termo });
               if (filtro.valor) parametros.set("tipo", filtro.valor);
+              if (categoriaAtual)
+                parametros.set("categoriaId", String(categoriaAtual));
+              if (subcategoriaAtual)
+                parametros.set("subcategoriaId", String(subcategoriaAtual));
 
               return (
                 <Link
@@ -131,7 +285,7 @@ function Moldura({
                   href={`/buscar?${parametros.toString()}`}
                   className={`flex min-h-9 shrink-0 items-center rounded-full border px-4 text-sm font-medium transition-colors duration-200 ${
                     ativo
-                      ? "border-acento bg-acento text-fundo"
+                      ? "border-acento bg-acento text-white"
                       : "border-borda bg-superficie text-texto-2 hover:border-acento/60 hover:bg-superficie-2 hover:text-texto"
                   }`}
                 >

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { perfilInstrutor } from "@/lib/queries";
+import { mapaDeProgresso, perfilInstrutor } from "@/lib/queries";
 import { ROTULOS_PLURAIS, TIPOS_NA_URL } from "@/lib/nav";
 import { resumir } from "@/lib/format";
 import { CardConteudo } from "@/components/card-conteudo";
@@ -47,11 +47,14 @@ export default async function PaginaInstrutor({
   const tipoValido = FILTROS.find((f) => f.valor === tipo)?.valor;
   const paginaAtual = Math.max(1, Number(pagina) || 1);
 
-  const perfil = await perfilInstrutor(numero, {
-    tipo: tipoValido,
-    page: paginaAtual,
-    limit: POR_PAGINA,
-  });
+  const [perfil, progresso] = await Promise.all([
+    perfilInstrutor(numero, {
+      tipo: tipoValido,
+      page: paginaAtual,
+      limit: POR_PAGINA,
+    }),
+    mapaDeProgresso(),
+  ]);
 
   if (!perfil?.instrutor) notFound();
 
@@ -113,7 +116,7 @@ export default async function PaginaInstrutor({
               href={`/instrutor/${numero}${consulta ? `?${consulta}` : ""}`}
               className={`flex min-h-9 shrink-0 items-center rounded-full border px-4 text-sm font-medium transition-colors duration-200 ${
                 ativo
-                  ? "border-acento bg-acento text-fundo"
+                  ? "border-acento bg-acento text-white"
                   : "border-borda bg-superficie text-texto-2 hover:border-acento/60 hover:bg-superficie-2 hover:text-texto"
               }`}
             >
@@ -134,6 +137,7 @@ export default async function PaginaInstrutor({
               key={conteudo.id}
               conteudo={conteudo}
               largura="w-full"
+              progresso={progresso.get(conteudo.id)}
             />
           ))}
         </div>

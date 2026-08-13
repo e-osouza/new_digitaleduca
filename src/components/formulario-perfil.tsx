@@ -118,7 +118,7 @@ export function FormularioPerfil({
       <button
         type="submit"
         disabled={enviando}
-        className="bg-acento text-fundo hover:bg-acento-hover mt-1 flex min-h-11 w-fit items-center rounded-full px-6 text-sm font-bold transition-colors disabled:opacity-60"
+        className="bg-acento text-white hover:bg-acento-hover mt-1 flex min-h-11 w-fit items-center rounded-full px-6 text-sm font-bold transition-colors disabled:opacity-60"
       >
         {enviando ? "Salvando…" : rotuloBotao}
       </button>

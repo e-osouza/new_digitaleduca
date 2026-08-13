@@ -1,7 +1,13 @@
 const VARIACOES = {
   neutro: "bg-superficie-2 text-texto-2 border-borda",
   acento: "bg-acento/15 text-acento-claro border-acento/40",
-  gratis: "bg-sucesso/15 text-sucesso border-sucesso/40",
+  /*
+    Preenchimento sólido, e não o tom de 15% das outras variações: este selo
+    fica sobre a capa do conteúdo, onde um fundo translúcido deixaria a foto
+    aparecer por baixo e comeria a legibilidade. Branco sobre `gratis` dá
+    5,3:1, acima do mínimo AA para texto pequeno.
+  */
+  gratis: "bg-gratis border-gratis text-white",
 } as const;
 
 export function Selo({

@@ -39,12 +39,9 @@ export function FormularioConta({ usuario }: { usuario: Usuario }) {
     setEnviando(true);
 
     const dados = new FormData(evento.currentTarget);
-    const corpo: Record<string, unknown> = {
-      aceitaNotificacoes: dados.get("aceitaNotificacoes") === "on",
-    };
+    const corpo: Record<string, unknown> = {};
 
     for (const [chave, valor] of dados.entries()) {
-      if (chave === "aceitaNotificacoes") continue;
       if (typeof valor === "string") corpo[chave] = valor;
     }
 
@@ -136,37 +133,11 @@ export function FormularioConta({ usuario }: { usuario: Usuario }) {
         </div>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="font-display text-base font-semibold">Segurança</h2>
-        <Campo
-          id="senha"
-          name="senha"
-          rotulo="Nova senha"
-          type="password"
-          autoComplete="new-password"
-          placeholder="••••••••"
-          dica="Deixe em branco para manter a senha atual."
-        />
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="font-display text-base font-semibold">Notificações</h2>
-        <label className="text-texto-2 flex items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            name="aceitaNotificacoes"
-            defaultChecked={usuario.aceitaNotificacoes ?? false}
-            className="accent-acento mt-0.5 h-4 w-4"
-          />
-          <span>Receber avisos sobre novos conteúdos e trilhas.</span>
-        </label>
-      </section>
-
       <div className="border-borda-suave flex items-center gap-4 border-t pt-6">
         <button
           type="submit"
           disabled={enviando}
-          className="bg-acento text-fundo hover:bg-acento-hover flex min-h-12 items-center rounded-full px-7 text-sm font-bold transition-colors disabled:opacity-60"
+          className="bg-acento text-white hover:bg-acento-hover flex min-h-12 items-center rounded-full px-7 text-sm font-bold transition-colors disabled:opacity-60"
         >
           {enviando ? "Salvando…" : "Salvar alterações"}
         </button>

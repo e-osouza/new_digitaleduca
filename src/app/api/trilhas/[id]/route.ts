@@ -1,0 +1,34 @@
+import { NextResponse } from "next/server";
+import { API_URL } from "@/lib/api";
+import { lerToken } from "@/lib/session";
+
+/** Arquiva a trilha. A API não apaga: marca `archivedAt` e some da listagem. */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const token = await lerToken();
+  if (!token) {
+    return NextResponse.json({ erro: "Sessão expirada." }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!/^\d+$/.test(id)) {
+    return NextResponse.json({ erro: "ID inválido." }, { status: 400 });
+  }
+
+  const resposta = await fetch(`${API_URL}/trilhas/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  if (!resposta.ok) {
+    return NextResponse.json(
+      { erro: "Não foi possível arquivar a trilha." },
+      { status: 502 },
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}

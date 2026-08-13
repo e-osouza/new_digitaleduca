@@ -1,10 +1,12 @@
 import "server-only";
+import { cache } from "react";
 import { api, apiOpcional } from "@/lib/api";
 import type {
   Assinatura,
   AvaliacaoMedia,
   AvaliacaoUsuario,
   Categoria,
+  Subcategoria,
   CategoriaComConteudos,
   Conteudo,
   Interesse,
@@ -24,7 +26,8 @@ import type {
   TipoConteudo,
   TipoDisponivel,
   Trilha,
-  TrilhaBruta,
+  TrilhaDetalhe,
+  ConteudoCatalogo,
   Usuario,
   Video,
   VimeoLink,
@@ -52,6 +55,106 @@ export function listarConteudos(opcoes: {
     `/conteudos${query({ page: 1, limit: 12, ...opcoes })}`,
     { revalidar: 300 },
   );
+}
+
+/**
+ * Conteúdos para ocupar a busca enquanto ninguém digitou nada.
+ *
+ * Começa pelos destaques da curadoria e completa com o catálogo geral: se
+ * houver menos destaques que o limite, a tela ainda assim abre cheia. As duas
+ * listagens são cacheadas por 300s, então isto não pesa na navegação.
+ */
+export async function sugestoesIniciais(limite = 12): Promise<Conteudo[]> {
+  const [emDestaque, geral] = await Promise.all([
+    listarConteudos({ destaque: true, limit: limite }),
+    listarConteudos({ limit: limite }),
+  ]);
+
+  const vistos = new Set<number>();
+  const reunidos: Conteudo[] = [];
+
+  for (const conteudo of [...emDestaque.data, ...geral.data]) {
+    if (vistos.has(conteudo.id)) continue;
+    vistos.add(conteudo.id);
+    reunidos.push(conteudo);
+    if (reunidos.length === limite) break;
+  }
+
+  return reunidos;
+}
+
+/**
+ * Ficha do conteúdo montada a partir da LISTAGEM, para quem a API barra no
+ * detalhe.
+ *
+ * `GET /conteudos/{id}` recusa com 400 quem não tem acesso premium (visto em
+ * `conteudo.service.ts → findOne`, que chama `temAcessoPremium` e lança antes
+ * de devolver). Já `GET /conteudos` não faz essa checagem e traz os mesmos
+ * campos que a página precisa: descrição, aprendizagem, requisitos, módulos,
+ * aulas com duração e instrutores.
+ *
+ * Serve, então, para exibir a vitrine do conteúdo premium — o visitante
+ * entende do que se trata o curso e só esbarra no bloqueio ao tentar assistir.
+ * O que NÃO vem por aqui é o `rating` e a `url` de cada vídeo, ambos
+ * calculados apenas no detalhe; nenhum dos dois é necessário sem reprodução.
+ *
+ * O acervo tem menos de uma centena de itens e a listagem é cacheada por 300s,
+ * então varrer a primeira página sai barato e só acontece no caso bloqueado.
+ */
+export async function fichaPelaListagem(id: number): Promise<Conteudo | null> {
+  const lista = await apiOpcional<ListaPaginada<Conteudo>>(
+    `/conteudos${query({ page: 1, limit: 200 })}`,
+    { revalidar: 300 },
+  );
+
+  return lista?.data.find((conteudo) => conteudo.id === id) ?? null;
+}
+
+/**
+ * Ranking de mais assistidos sem podcasts, completado até `limite`.
+ *
+ * O ranking global (`/conteudos/top10` sem tipo) é o único com ordem real, mas
+ * sobram menos de 10 depois de tirar os podcasts — na prática caiu para 7. Como
+ * a API não devolve a contagem de acessos, não dá para reordenar nada por conta
+ * própria; o que dá é buscar o top de cada tipo e usá-los para completar.
+ *
+ * A ordem resultante é honesta até onde vai o ranking global, e aproximada
+ * depois: os itens acrescentados são de fato os mais assistidos do seu tipo,
+ * só não se sabe como se intercalariam com os demais. Alternamos aula e
+ * palestra ao completar para a cauda não pender toda para um tipo só — o
+ * acervo tem 57 palestras contra 12 aulas.
+ */
+export async function maisAssistidosSemPodcast(limite = 10): Promise<Conteudo[]> {
+  const [geral, aulas, palestras] = await Promise.all([
+    listarTop10(),
+    listarTop10({ tipo: "AULA" }),
+    listarTop10({ tipo: "PALESTRA" }),
+  ]);
+
+  const vistos = new Set<number>();
+  const ranking: Conteudo[] = [];
+
+  const acrescentar = (itens: Conteudo[]) => {
+    for (const conteudo of itens) {
+      if (ranking.length >= limite) return;
+      if (conteudo.tipo === "PODCAST" || vistos.has(conteudo.id)) continue;
+      vistos.add(conteudo.id);
+      ranking.push(conteudo);
+    }
+  };
+
+  acrescentar(geral.data);
+
+  const maiorLista = Math.max(aulas.data.length, palestras.data.length);
+  for (let i = 0; i < maiorLista && ranking.length < limite; i += 1) {
+    acrescentar(
+      [aulas.data[i], palestras.data[i]].filter(
+        (conteudo): conteudo is Conteudo => Boolean(conteudo),
+      ),
+    );
+  }
+
+  return ranking;
 }
 
 export function listarTop10(opcoes: { tipo?: TipoConteudo; categoriaId?: number } = {}) {
@@ -169,6 +272,19 @@ export function paraCard(item: ConteudoEmAndamento): ConteudoResumo {
   };
 }
 
+/**
+ * Mapa `conteudoId → percentual assistido`, para marcar com a barra de
+ * continuação os cards que aparecem em qualquer listagem.
+ *
+ * Uma chamada serve a página inteira: sem ela, cada trilho precisaria cruzar o
+ * próprio resultado com o progresso por conta própria. Devolve mapa vazio para
+ * quem não está logado, porque `emAndamento` já engole o 401.
+ */
+export const mapaDeProgresso = cache(async (): Promise<Map<number, number>> => {
+  const itens = await emAndamento(100);
+  return new Map(itens.map((item) => [item.conteudoId, item.percentualAssistido]));
+});
+
 export function assistidosRecentemente() {
   return apiOpcional<ProgressoVideo[]>("/progresso-video/recentes", {
     autenticado: true,
@@ -176,11 +292,31 @@ export function assistidosRecentemente() {
   });
 }
 
-export function progressoDoVideo(videoId: number) {
-  return apiOpcional<ProgressoVideo>(`/progresso-video/${videoId}`, {
-    autenticado: true,
-    revalidar: false,
-  });
+/**
+ * Posição salva de um vídeo, ou `null` se ele nunca foi assistido — nesse caso
+ * a API responde 200 com corpo vazio.
+ *
+ * Aceita `segundos` e `seconds` porque o nome do campo na spec já se provou
+ * errado uma vez: o exemplo de `PATCH /progresso-video` documenta `seconds`, e
+ * a validação da API recusa exatamente esse nome. Como a resposta do GET não
+ * tem schema publicado, ler os dois evita depender de adivinhação.
+ */
+export async function progressoDoVideo(
+  videoId: number,
+): Promise<ProgressoVideo | null> {
+  const bruto = await apiOpcional<{
+    segundos?: number;
+    seconds?: number;
+    concluido?: boolean;
+  }>(`/progresso-video/${videoId}`, { autenticado: true, revalidar: false });
+
+  if (!bruto) return null;
+
+  return {
+    videoId,
+    segundos: Math.max(0, Math.floor(bruto.segundos ?? bruto.seconds ?? 0)),
+    concluido: Boolean(bruto.concluido),
+  };
 }
 
 /* ---------------- perfil complementar ---------------- */
@@ -252,6 +388,16 @@ export function perfilInstrutor(
   );
 }
 
+/** Lista completa de categorias — alimenta os filtros da busca. */
+export function listarTodasCategorias() {
+  return apiOpcional<Categoria[]>("/categorias/list", { revalidar: 3600 });
+}
+
+/** Subcategorias com `categoriaId`, para encadear os dois filtros. */
+export function listarSubcategorias() {
+  return apiOpcional<Subcategoria[]>("/subcategorias/list", { revalidar: 3600 });
+}
+
 export function obterCategoria(id: number) {
   return apiOpcional<Categoria>(`/categorias/${id}`, { revalidar: 3600 });
 }
@@ -304,64 +450,35 @@ export async function conteudosDaCategoria(categoriaId: number): Promise<{
 /* ---------------- trilhas ---------------- */
 
 /**
- * `GET /trilhas` não tem schema na spec. Devolvemos o bruto e normalizamos em
- * `normalizarTrilhas`, tolerando array puro ou envelope `{data}`.
+ * Contratos lidos direto do backend (`src/trilhas/`), porque a spec publica os
+ * DTOs vazios. Todos os endpoints devolvem `{ data }` nas listagens.
  */
-export function listarTrilhas() {
-  return apiOpcional<TrilhaBruta[] | Envelope<TrilhaBruta>>("/trilhas", {
+export async function listarTrilhas(): Promise<Trilha[]> {
+  const resposta = await apiOpcional<Envelope<Trilha>>("/trilhas", {
     autenticado: true,
     revalidar: false,
   });
+  return resposta?.data ?? [];
 }
 
 export function obterTrilha(id: number) {
-  return apiOpcional<TrilhaBruta>(`/trilhas/${id}`, {
+  return apiOpcional<TrilhaDetalhe>(`/trilhas/${id}`, {
     autenticado: true,
     revalidar: false,
   });
 }
 
-export function videosDaTrilha(id: number) {
-  return apiOpcional<unknown>(`/trilhas/${id}/videos`, {
-    autenticado: true,
-    revalidar: false,
-  });
-}
-
-/** Reduz as variações possíveis de nome de campo a uma forma única. */
-export function normalizarTrilhas(
-  resposta: TrilhaBruta[] | Envelope<TrilhaBruta> | null,
-): Trilha[] {
-  if (!resposta) return [];
-
-  const lista = Array.isArray(resposta) ? resposta : (resposta.data ?? []);
-  if (!Array.isArray(lista)) return [];
-
-  return lista.flatMap((bruta) => {
-    const id = Number(bruta?.id);
-    if (!Number.isInteger(id)) return [];
-
-    const itens = bruta.itens ?? bruta.items;
-
-    return [
-      {
-        id,
-        titulo:
-          bruta.titulo ?? bruta.nome ?? bruta.title ?? bruta.name ?? "Trilha",
-        descricao: bruta.descricao ?? bruta.description ?? null,
-        progresso: numeroOuNulo(bruta.progresso ?? bruta.progress),
-        totalItens:
-          numeroOuNulo(bruta.totalItens ?? bruta.totalItems) ??
-          (Array.isArray(itens) ? itens.length : null),
-        concluidos: numeroOuNulo(bruta.concluidos ?? bruta.completed),
-      },
-    ];
-  });
-}
-
-function numeroOuNulo(valor: unknown): number | null {
-  const n = Number(valor);
-  return Number.isFinite(n) ? n : null;
+/** Catálogo de conteúdos e aulas para montar a trilha manual. */
+export function catalogoTrilha(opcoes: {
+  q?: string;
+  tipo?: TipoConteudo;
+  page?: number;
+  limit?: number;
+} = {}) {
+  return apiOpcional<ListaPaginada<ConteudoCatalogo>>(
+    `/trilhas/catalog${query({ page: 1, limit: 12, ...opcoes })}`,
+    { autenticado: true, revalidar: false },
+  );
 }
 
 /* ---------------- vídeo ---------------- */

@@ -3,10 +3,23 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { estaAutenticado } from "@/lib/session";
 import { FormularioLogin } from "@/components/formulario-login";
+import { MolduraAcesso } from "@/components/moldura-acesso";
+import { Nota } from "@/components/campo";
 
 export const metadata: Metadata = { title: "Entrar" };
 
-export default async function Entrar({
+/**
+ * Home da plataforma: o login.
+ *
+ * A página institucional saiu deste projeto — ela agora vive em
+ * `digitaleduca.com.vc`, e este app responde por
+ * `plataforma.digitaleduca.com.vc`. Como o domínio só serve quem vai acessar a
+ * plataforma, a raiz é a tela de entrada, sem intermediários.
+ *
+ * `/entrar` continua existindo como redirect: o `proxy.ts`, o fluxo de sessão
+ * expirada e links antigos apontam para lá.
+ */
+export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ proximo?: string; expirada?: string }>;
@@ -21,21 +34,18 @@ export default async function Entrar({
   const destino = proximo?.startsWith("/") ? proximo : "/inicio";
 
   return (
-    <div className="mx-auto flex w-full max-w-sm flex-col gap-8 px-4 py-16 sm:py-24">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">
-          Entrar
-        </h1>
-        <p className="text-texto-3 text-sm">
-          {expirada
-            ? "Sua sessão expirou. Entre de novo para continuar."
-            : "Acesse suas trilhas, aulas e o progresso de onde parou."}
-        </p>
-      </div>
-
+    <MolduraAcesso
+      titulo="Entrar"
+      descricao="Acesse suas trilhas, aulas e o progresso de onde parou."
+      aviso={
+        expirada ? (
+          <Nota>Sua sessão expirou. Entre de novo para continuar de onde parou.</Nota>
+        ) : null
+      }
+    >
       <Suspense>
         <FormularioLogin proximo={destino} />
       </Suspense>
-    </div>
+    </MolduraAcesso>
   );
 }

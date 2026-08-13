@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { conteudosDaCategoria } from "@/lib/queries";
+import { conteudosDaCategoria, mapaDeProgresso } from "@/lib/queries";
 import { CardConteudo } from "@/components/card-conteudo";
 import { Trilho } from "@/components/trilho";
 
@@ -23,7 +23,10 @@ export default async function PaginaCategoria({
   const numero = Number(id);
   if (!Number.isInteger(numero) || numero <= 0) notFound();
 
-  const { nome, subcategorias } = await conteudosDaCategoria(numero);
+  const [{ nome, subcategorias }, progresso] = await Promise.all([
+    conteudosDaCategoria(numero),
+    mapaDeProgresso(),
+  ]);
   if (!nome) notFound();
 
   const total = subcategorias.reduce((soma, s) => soma + s.conteudos.length, 0);
@@ -52,7 +55,11 @@ export default async function PaginaCategoria({
         subcategorias.map((sub) => (
           <Trilho key={sub.id} titulo={sub.nome}>
             {sub.conteudos.map((conteudo) => (
-              <CardConteudo key={conteudo.id} conteudo={conteudo} />
+              <CardConteudo
+                key={conteudo.id}
+                conteudo={conteudo}
+                progresso={progresso.get(conteudo.id)}
+              />
             ))}
           </Trilho>
         ))

@@ -1,44 +1,34 @@
 import Link from "next/link";
 import { Marca } from "@/components/marca";
+import { SITE_INSTITUCIONAL } from "@/lib/nav";
 
 /**
- * Cabeçalho do site público. As páginas deste grupo redirecionam quem já está
- * autenticado para /inicio, então aqui só existe o estado de visitante.
+ * Cabeçalho das telas de acesso: login, cadastro e recuperação de senha.
+ *
+ * Ficou reduzido à marca depois que a página institucional saiu deste projeto.
+ * O menu antigo apontava para âncoras da landing (`/#conteudos`, `/#planos`,
+ * `/#contato`) que deixaram de existir aqui — manter aqueles links produziria
+ * 404. A marca leva ao site institucional, que é o único caminho de volta que
+ * ainda faz sentido a partir de `plataforma.digitaleduca.com.vc`.
  */
 export function Cabecalho() {
   return (
     <header className="border-borda-suave bg-cromo/85 sticky top-0 z-40 border-b backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-5 sm:px-8 lg:px-10">
-        <Link href="/" className="shrink-0" aria-label="Início — Digital Educa">
+        <a
+          href={SITE_INSTITUCIONAL}
+          className="shrink-0"
+          aria-label="Digital Educa — site institucional"
+        >
           <Marca altura={26} />
+        </a>
+
+        <Link
+          href="/cadastro"
+          className="text-texto-2 hover:text-texto ml-auto px-2 text-sm font-medium transition-colors"
+        >
+          Criar conta
         </Link>
-
-        <nav className="text-texto-2 ml-6 hidden items-center gap-7 text-sm md:flex">
-          <Link href="/#conteudos" className="hover:text-texto transition-colors">
-            Conteúdos
-          </Link>
-          <Link href="/#planos" className="hover:text-texto transition-colors">
-            Planos
-          </Link>
-          <Link href="/#contato" className="hover:text-texto transition-colors">
-            Contato
-          </Link>
-        </nav>
-
-        <div className="ml-auto flex items-center gap-3">
-          <Link
-            href="/entrar"
-            className="text-texto-2 hover:text-texto hidden px-2 text-sm font-medium transition-colors sm:block"
-          >
-            Entrar
-          </Link>
-          <Link
-            href="/cadastro"
-            className="bg-acento text-fundo hover:bg-acento-hover rounded-full px-4 py-2 text-sm font-semibold transition-colors"
-          >
-            Criar conta
-          </Link>
-        </div>
       </div>
     </header>
   );

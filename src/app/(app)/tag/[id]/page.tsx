@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { obterTag } from "@/lib/queries";
+import { mapaDeProgresso, obterTag } from "@/lib/queries";
 import { CardConteudo } from "@/components/card-conteudo";
 
 export async function generateMetadata({
@@ -22,7 +22,10 @@ export default async function PaginaTag({
   const numero = Number(id);
   if (!Number.isInteger(numero) || numero <= 0) notFound();
 
-  const tag = await obterTag(numero);
+  const [tag, progresso] = await Promise.all([
+    obterTag(numero),
+    mapaDeProgresso(),
+  ]);
   if (!tag) notFound();
 
   /*
@@ -65,6 +68,7 @@ export default async function PaginaTag({
               key={conteudo.id}
               conteudo={conteudo}
               largura="w-full"
+              progresso={progresso.get(conteudo.id)}
             />
           ))}
         </div>
