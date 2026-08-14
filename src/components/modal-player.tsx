@@ -16,6 +16,17 @@ export type AulaDoModal = {
   concluido: boolean;
   /** Título do módulo, quando a aula pertence a um. */
   modulo: string | null;
+  /**
+   * Item da trilha a que esta aula corresponde. Só existe quando o modal é
+   * aberto por dentro de uma trilha — é o que o endpoint de progresso dela
+   * espera, junto do `trilhaId` passado ao modal.
+   */
+  trailItemId?: number | null;
+  /**
+   * A aula ainda depende da conclusão da anterior. Instantâneo do servidor: ao
+   * terminar a anterior aqui dentro, ela libera sem precisar recarregar.
+   */
+  bloqueada?: boolean;
 };
 
 /** Espera antes de emendar a próxima aula, com contagem visível. */
@@ -36,11 +47,17 @@ export function ModalPlayer({
   aoFechar,
   aulas,
   inicialId,
+  trilhaId = null,
 }: {
   aberto: boolean;
   aoFechar: () => void;
   aulas: AulaDoModal[];
   inicialId: number;
+  /**
+   * Trilha de onde as aulas vieram. Quando presente, cada ping do player também
+   * avança a barra da trilha — o backend guarda os dois progressos separados.
+   */
+  trilhaId?: number | null;
 }) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const router = useRouter();
@@ -49,11 +66,42 @@ export function ModalPlayer({
   const [listaAberta, setListaAberta] = useState(true);
   /** Segundos restantes até a próxima aula. `null` = nenhuma contagem em curso. */
   const [contagem, setContagem] = useState<number | null>(null);
+  /**
+   * Aulas terminadas nesta sessão do modal. O `concluido` que veio do servidor é
+   * um instantâneo da carga da página; sem isto, terminar uma aula não marcaria
+   * o ✓ na lista nem liberaria a seguinte numa trilha sequencial.
+   */
+  const [concluidasAgora, setConcluidasAgora] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
 
   const indiceAtual = aulas.findIndex((aula) => aula.id === atualId);
   const atual = aulas[indiceAtual] ?? aulas[0];
   const proxima = aulas[indiceAtual + 1] ?? null;
   const temLista = aulas.length > 1;
+
+  const concluidas = useMemo(() => {
+    const ids = new Set(concluidasAgora);
+    for (const aula of aulas) if (aula.concluido) ids.add(aula.id);
+    return ids;
+  }, [aulas, concluidasAgora]);
+
+  /*
+   * Quem pode ser reproduzida agora. Só a trilha marca aulas como bloqueadas, e
+   * a regra dela é uma só: a anterior precisa estar concluída. Como a anterior
+   * é a vizinha na lista, terminar uma aula aqui dentro libera a seguinte na
+   * hora — o encadeamento automático continua funcionando sem recarregar.
+   */
+  const liberadas = useMemo(() => {
+    const ids = new Set<number>();
+    aulas.forEach((aula, indice) => {
+      const anterior = aulas[indice - 1];
+      if (!aula.bloqueada || !anterior || concluidas.has(anterior.id)) {
+        ids.add(aula.id);
+      }
+    });
+    return ids;
+  }, [aulas, concluidas]);
 
   /* Trocar de aula por qualquer via cancela uma contagem em andamento. */
   const trocarAula = useCallback((id: number) => {
@@ -66,8 +114,9 @@ export function ModalPlayer({
    * reprodução simplesmente termina.
    */
   const aoFinalizar = useCallback(() => {
+    setConcluidasAgora((anteriores) => new Set(anteriores).add(atual.id));
     if (proxima) setContagem(SEGUNDOS_ATE_PROXIMA);
-  }, [proxima]);
+  }, [atual.id, proxima]);
 
   /*
    * Relógio da contagem. Tanto o decremento quanto o avanço acontecem dentro do
@@ -202,6 +251,8 @@ export function ModalPlayer({
                   titulo={atual.titulo}
                   segundosIniciais={atual.segundosIniciais}
                   aoFinalizar={aoFinalizar}
+                  trilhaId={trilhaId}
+                  trailItemId={atual.trailItemId ?? null}
                 />
               )}
 
@@ -250,6 +301,8 @@ export function ModalPlayer({
                             <ItemAula
                               aula={aula}
                               ativa={aula.id === atual.id}
+                              concluida={concluidas.has(aula.id)}
+                              liberada={liberadas.has(aula.id)}
                               aoEscolher={() => trocarAula(aula.id)}
                             />
                           </li>
@@ -272,32 +325,54 @@ export function ModalPlayer({
 function ItemAula({
   aula,
   ativa,
+  concluida,
+  liberada,
   aoEscolher,
 }: {
   aula: AulaDoModal;
   ativa: boolean;
+  concluida: boolean;
+  /** Falso só nas trilhas, enquanto a aula anterior não terminar. */
+  liberada: boolean;
   aoEscolher: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={aoEscolher}
+      disabled={!liberada}
       aria-current={ativa ? "true" : undefined}
+      title={liberada ? undefined : "Conclua a aula anterior"}
       className={`ease-suave flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ${
-        ativa ? "bg-white/15" : "hover:bg-white/8"
+        !liberada
+          ? "opacity-45"
+          : ativa
+            ? "bg-white/15"
+            : "hover:bg-white/8"
       }`}
     >
       <span
         aria-hidden="true"
         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-          aula.concluido
+          concluida
             ? "bg-acento-claro text-fundo"
             : ativa
               ? "text-acento-claro ring-acento-claro ring-1"
               : "text-white/40 ring-1 ring-white/25"
         }`}
       >
-        {aula.concluido ? "✓" : ativa ? "▶" : ""}
+        {concluida ? (
+          "✓"
+        ) : ativa ? (
+          "▶"
+        ) : !liberada ? (
+          <svg viewBox="0 0 20 20" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="4.5" y="9" width="11" height="7" rx="1.8" />
+            <path d="M7 9V6.8a3 3 0 0 1 6 0V9" />
+          </svg>
+        ) : (
+          ""
+        )}
       </span>
 
       <span className="min-w-0 flex-1">
@@ -351,13 +426,23 @@ function ProximaAula({
         </p>
       </div>
 
-      <p className="text-white/70">
-        Começa em{" "}
-        <span className="text-acento-claro font-semibold tabular-nums">
+      {/*
+        A contagem é o que se olha aqui: ela diz quanto tempo resta para
+        decidir entre deixar emendar e cancelar. Como número corrido no meio da
+        frase, ela se perdia — vira numeral grande, com o resto da frase abaixo.
+
+        Em branco, e não no acento: o fundo desta camada é preto fixo, então um
+        token do tema mudaria de legibilidade conforme o tema, e `acento-claro`
+        no tema claro é azul escuro demais para este tamanho sobre preto.
+      */}
+      <div className="flex flex-col items-center gap-1">
+        <span className="font-display text-6xl leading-none font-bold text-white tabular-nums sm:text-7xl">
           {segundos}
-        </span>{" "}
-        {segundos === 1 ? "segundo" : "segundos"}
-      </p>
+        </span>
+        <p className="text-sm text-white/70">
+          {segundos === 1 ? "segundo para começar" : "segundos para começar"}
+        </p>
+      </div>
 
       <div className="flex flex-wrap items-center justify-center gap-3">
         <button

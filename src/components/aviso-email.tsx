@@ -1,7 +1,20 @@
-import Link from "next/link";
+"use client";
 
-/** Faixa mostrada no topo da plataforma enquanto o e-mail não é confirmado. */
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const DESTINO = "/verificar-email";
+
+/**
+ * Faixa mostrada no topo da plataforma enquanto o e-mail não é confirmado.
+ *
+ * Some na própria tela de confirmação: ali ela mandaria a pessoa para onde ela
+ * já está, e ainda empurrava para baixo o cartão que aquela tela centraliza.
+ */
 export function AvisoEmail() {
+  const caminho = usePathname();
+  if (caminho === DESTINO) return null;
+
   return (
     <div className="border-borda-suave bg-acento/10 border-b">
       <div className="calha flex w-full flex-wrap items-center gap-x-3 gap-y-1 py-2.5 text-sm">
@@ -18,7 +31,7 @@ export function AvisoEmail() {
         </svg>
         <span className="text-texto-2">Confirme seu e-mail para não perder avisos.</span>
         <Link
-          href="/verificar-email"
+          href={DESTINO}
           className="text-acento hover:text-acento-hover font-semibold underline-offset-2 hover:underline"
         >
           Confirmar agora

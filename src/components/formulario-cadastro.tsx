@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo } from "@/components/campo";
+import { CampoCelular } from "@/components/campo-celular";
+import { CampoSenha } from "@/components/campo-senha";
 
 export function FormularioCadastro() {
   const router = useRouter();
@@ -41,8 +43,17 @@ export function FormularioCadastro() {
         return;
       }
 
-      // Se o login automático falhar, a conta existe — mandamos para o login.
-      router.replace(corpo.autenticado ? "/inicio" : "/");
+      /*
+       * Conta criada e sessão aberta: vai direto para a confirmação do e-mail.
+       * O código acabou de ser enviado, e este é o único momento em que a
+       * pessoa tem o e-mail aberto por causa do cadastro — mandá-la para
+       * `/inicio` deixava a confirmação por conta de uma faixa discreta no topo
+       * que muita gente nunca lê. De lá dá para pular para o catálogo.
+       *
+       * Sem sessão, a conta existe mas o login automático falhou; o `criada=1`
+       * é o que faz a tela de login explicar isso em vez de aparecer em branco.
+       */
+      router.replace(corpo.autenticado ? "/verificar-email" : "/?criada=1");
       router.refresh();
     } catch {
       setErro("Falha de conexão. Verifique sua internet e tente de novo.");
@@ -73,21 +84,12 @@ export function FormularioCadastro() {
         placeholder="voce@exemplo.com"
       />
 
-      <Campo
-        id="celular"
-        name="celular"
-        rotulo="Celular"
-        type="tel"
-        autoComplete="tel"
-        required
-        placeholder="(11) 90000-0000"
-      />
+      <CampoCelular required />
 
-      <Campo
+      <CampoSenha
         id="senha"
         name="senha"
         rotulo="Senha"
-        type="password"
         autoComplete="new-password"
         required
         minLength={6}

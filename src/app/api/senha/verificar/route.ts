@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { API_URL } from "@/lib/api";
+import { enviarCodigo } from "@/lib/codigo-verificacao";
 
 /** Passo 2: troca o código pelo token de redefinição. */
 export async function POST(request: Request) {
@@ -13,6 +14,13 @@ export async function POST(request: Request) {
   const email = String(corpo.email ?? "").trim().toLowerCase();
   const codigo = String(corpo.codigo ?? "").trim();
 
+  if (!email.includes("@")) {
+    return NextResponse.json(
+      { erro: "Recomece informando o e-mail da conta." },
+      { status: 400 },
+    );
+  }
+
   if (!/^\d{4}$/.test(codigo)) {
     return NextResponse.json(
       { erro: "O código tem 4 dígitos." },
@@ -20,11 +28,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const resposta = await fetch(`${API_URL}/reset-password/verify-code`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, codigo }),
-    cache: "no-store",
+  const resposta = await enviarCodigo(`${API_URL}/reset-password/verify-code`, {
+    email,
+    codigo,
   });
 
   if (!resposta.ok) {

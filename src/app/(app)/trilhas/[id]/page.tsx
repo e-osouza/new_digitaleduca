@@ -3,10 +3,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { obterTrilha } from "@/lib/queries";
-import { formatarDuracao, formatarRelogio, rotuloTipo } from "@/lib/format";
+import {
+  extrairVimeoId,
+  formatarDuracao,
+  formatarRelogio,
+  rotuloTipo,
+} from "@/lib/format";
 import { FAIXA } from "@/lib/ui";
 import { Selo } from "@/components/selo";
 import { BotaoArquivarTrilha } from "@/components/botao-arquivar-trilha";
+import { GatilhoAula, ReprodutorTrilha } from "@/components/reprodutor-trilha";
+import type { AulaDoModal } from "@/components/modal-player";
 import type { ItemTrilha, TrilhaDetalhe } from "@/types/api";
 
 export async function generateMetadata({
@@ -36,52 +43,72 @@ export default async function PaginaTrilha({
   const capa = trilha.thumbnailDesktopUrl ?? trilha.thumbnailUrl;
   const concluida = trilha.progressoPercent >= 100;
 
+  /*
+   * Aulas na forma que o modal consome — o mesmo player das páginas de
+   * conteúdo. Reproduzir aqui evita a ida a `/assistir`: ao fechar, a jornada
+   * já está de volta na tela, revalidada com o progresso da sessão.
+   */
+  const aulasDoModal = montarAulasDaTrilha(trilha);
+  const reproduziveis = new Set(aulasDoModal.map((aula) => aula.id));
+  const aulaInicial =
+    (proxima && reproduziveis.has(proxima.videoId)
+      ? proxima.videoId
+      : aulasDoModal[0]?.id) ?? 0;
+
   return (
-    <div className={`${FAIXA} flex flex-col gap-10 py-8 sm:py-10`}>
-      <Link
-        href="/trilhas"
-        className="text-texto-3 hover:text-acento flex w-fit items-center gap-1.5 text-sm transition-colors"
-      >
-        <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 4.5 6.5 10l5.5 5.5" />
-        </svg>
-        Trilhas
-      </Link>
+    <ReprodutorTrilha
+      aulas={aulasDoModal}
+      trilhaId={trilha.id}
+      inicialId={aulaInicial}
+    >
+      <div className={`${FAIXA} flex flex-col gap-10 py-8 sm:py-10`}>
+        <Link
+          href="/trilhas"
+          className="text-texto-3 hover:text-acento flex w-fit items-center gap-1.5 text-sm transition-colors"
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 4.5 6.5 10l5.5 5.5" />
+          </svg>
+          Trilhas
+        </Link>
 
-      <Cabecalho
-        trilha={trilha}
-        capa={capa}
-        proxima={proxima}
-        concluida={concluida}
-      />
+        <Cabecalho
+          trilha={trilha}
+          capa={capa}
+          proxima={proxima}
+          concluida={concluida}
+          reproduzivel={Boolean(proxima && reproduziveis.has(proxima.videoId))}
+        />
 
-      {itens.length > 0 && (
-        <section className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-display text-lg font-semibold">Sua jornada</h2>
-            <p className="text-texto-3 text-sm">
-              As aulas liberam na ordem — cada uma prepara a seguinte.
-            </p>
-          </div>
+        {itens.length > 0 && (
+          <section className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1">
+              <h2 className="font-display text-lg font-semibold">Sua jornada</h2>
+              <p className="text-texto-3 text-sm">
+                As aulas liberam na ordem — cada uma prepara a seguinte.
+              </p>
+            </div>
 
-          <ol className="flex flex-col">
-            {itens.map((item, indice) => (
-              <LinhaJornada
-                key={item.id}
-                item={item}
-                indice={indice}
-                trilhaId={trilha.id}
-                ultima={indice === itens.length - 1}
-                anteriorConcluido={itens[indice - 1]?.concluido ?? false}
-                ehProxima={item.id === proxima?.id}
-              />
-            ))}
-          </ol>
-        </section>
-      )}
+            <ol className="flex flex-col">
+              {itens.map((item, indice) => (
+                <LinhaJornada
+                  key={item.id}
+                  item={item}
+                  indice={indice}
+                  trilhaId={trilha.id}
+                  ultima={indice === itens.length - 1}
+                  anteriorConcluido={itens[indice - 1]?.concluido ?? false}
+                  ehProxima={item.id === proxima?.id}
+                  reproduzivel={reproduziveis.has(item.videoId)}
+                />
+              ))}
+            </ol>
+          </section>
+        )}
 
-      <SobreATrilha trilha={trilha} />
-    </div>
+        <SobreATrilha trilha={trilha} />
+      </div>
+    </ReprodutorTrilha>
   );
 }
 
@@ -92,12 +119,32 @@ function Cabecalho({
   capa,
   proxima,
   concluida,
+  reproduzivel,
 }: {
   trilha: TrilhaDetalhe;
   capa: string | null;
   proxima?: ItemTrilha;
   concluida: boolean;
+  /** A próxima aula abre no modal; falso derruba para a página `/assistir`. */
+  reproduzivel: boolean;
 }) {
+  const rotulo = trilha.aulasConcluidas === 0 ? "Começar trilha" : "Continuar";
+
+  const chamada = proxima && (
+    <>
+      <svg viewBox="0 0 16 16" aria-hidden="true" className="h-4 w-4" fill="currentColor">
+        <path d="M4 2.5v11l9-5.5-9-5.5Z" />
+      </svg>
+      {rotulo}
+      <span className="hidden max-w-56 truncate font-normal opacity-80 sm:inline">
+        · {proxima.titulo}
+      </span>
+    </>
+  );
+
+  const visualChamada =
+    "bg-acento text-white hover:bg-acento-hover ease-suave flex min-h-12 w-fit items-center gap-2 rounded-full px-6 text-sm font-bold transition-all duration-200 hover:gap-3";
+
   return (
     <header className="border-borda-suave bg-superficie flex flex-col gap-6 rounded-2xl border p-5 sm:p-6 lg:flex-row lg:items-start lg:gap-8">
       {capa && (
@@ -162,20 +209,19 @@ function Cabecalho({
           </span>
         </div>
 
-        {proxima && (
-          <Link
-            href={destinoDaAula(proxima, trilha.id)}
-            className="bg-acento text-white hover:bg-acento-hover ease-suave flex min-h-12 w-fit items-center gap-2 rounded-full px-6 text-sm font-bold transition-all duration-200 hover:gap-3"
-          >
-            <svg viewBox="0 0 16 16" aria-hidden="true" className="h-4 w-4" fill="currentColor">
-              <path d="M4 2.5v11l9-5.5-9-5.5Z" />
-            </svg>
-            {trilha.aulasConcluidas === 0 ? "Começar trilha" : "Continuar"}
-            <span className="hidden max-w-56 truncate font-normal opacity-80 sm:inline">
-              · {proxima.titulo}
-            </span>
-          </Link>
-        )}
+        {proxima &&
+          (reproduzivel ? (
+            <GatilhoAula videoId={proxima.videoId} className={visualChamada}>
+              {chamada}
+            </GatilhoAula>
+          ) : (
+            <Link
+              href={destinoDaAula(proxima, trilha.id)}
+              className={visualChamada}
+            >
+              {chamada}
+            </Link>
+          ))}
       </div>
     </header>
   );
@@ -206,6 +252,7 @@ function LinhaJornada({
   ultima,
   anteriorConcluido,
   ehProxima,
+  reproduzivel,
 }: {
   item: ItemTrilha;
   indice: number;
@@ -214,12 +261,18 @@ function LinhaJornada({
   /** Colore o trecho da espinha que vem de cima, para não trocar de cor no meio. */
   anteriorConcluido: boolean;
   ehProxima: boolean;
+  /** A aula está na lista do modal; senão a linha volta a levar a `/assistir`. */
+  reproduzivel: boolean;
 }) {
   const bloqueada = item.status === "BLOQUEADO" && !item.concluido;
   const acessivel = !item.requerAssinatura && !bloqueada;
 
+  /*
+   * `span`, e não `div`: a linha inteira vira o conteúdo de um botão quando a
+   * aula abre no player, e botão só aceita conteúdo de frase.
+   */
   const conteudo = (
-    <div
+    <span
       className={`ease-suave flex flex-1 items-center gap-4 rounded-xl border p-3 transition-[border-color,background-color] duration-200 ${
         ehProxima
           ? "border-acento/50 bg-acento/5"
@@ -243,9 +296,10 @@ function LinhaJornada({
           />
         )}
         {item.progressoPercent > 0 && !item.concluido && (
-          <span className="bg-fundo/70 absolute inset-x-0 bottom-0 h-1">
+          <span className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
+            {/* Mesmo azul da barra dos cards — ver `--color-progresso`. */}
             <span
-              className="bg-acento block h-full"
+              className="bg-progresso block h-full"
               style={{ width: `${item.progressoPercent}%` }}
             />
           </span>
@@ -295,7 +349,7 @@ function LinhaJornada({
           Conclua a anterior
         </span>
       ) : null}
-    </div>
+    </span>
   );
 
   return (
@@ -354,12 +408,21 @@ function LinhaJornada({
 
       <div className="flex flex-1 pb-3">
         {acessivel ? (
-          <Link
-            href={destinoDaAula(item, trilhaId)}
-            className="flex flex-1 active:scale-[0.995]"
-          >
-            {conteudo}
-          </Link>
+          reproduzivel ? (
+            <GatilhoAula
+              videoId={item.videoId}
+              className="flex flex-1 text-left active:scale-[0.995]"
+            >
+              {conteudo}
+            </GatilhoAula>
+          ) : (
+            <Link
+              href={destinoDaAula(item, trilhaId)}
+              className="flex flex-1 active:scale-[0.995]"
+            >
+              {conteudo}
+            </Link>
+          )
         ) : item.requerAssinatura ? (
           <Link href="/planos" className="flex flex-1">
             {conteudo}
@@ -414,9 +477,56 @@ function SobreATrilha({ trilha }: { trilha: TrilhaDetalhe }) {
   );
 }
 
+/* ---------------------------- reprodução ---------------------------- */
+
+/**
+ * Itens da trilha na forma que o modal de reprodução consome, na ordem da
+ * jornada.
+ *
+ * Ficam de fora as aulas que a API marcou como exclusivas de assinantes — elas
+ * continuam levando ao `/planos` — e as sem vídeo do Vimeo resolvido, que não
+ * teriam o que tocar. O `vimeoUri` vem no próprio `GET /trilhas/{id}`, então
+ * montar a lista não custa nenhuma chamada extra.
+ *
+ * Bloqueadas entram: a lista lateral as mostra com cadeado e a conclusão da
+ * anterior, dentro do próprio modal, libera a seguinte.
+ */
+function montarAulasDaTrilha(trilha: TrilhaDetalhe): AulaDoModal[] {
+  const vistos = new Set<number>();
+  const aulas: AulaDoModal[] = [];
+
+  for (const item of trilha.items ?? []) {
+    if (item.requerAssinatura || vistos.has(item.videoId)) continue;
+
+    const vimeoId = extrairVimeoId(item.vimeoUri);
+    if (!vimeoId) continue;
+
+    vistos.add(item.videoId);
+    aulas.push({
+      id: item.videoId,
+      titulo: item.titulo,
+      vimeoId,
+      duracao: item.duracaoSegundos > 0 ? item.duracaoSegundos : null,
+      // Aula concluída recomeça do zero, como nas páginas de conteúdo.
+      segundosIniciais: item.concluido ? 0 : item.segundosAssistidos,
+      concluido: item.concluido,
+      // Numa trilha as aulas vêm de conteúdos diferentes: é por eles que a
+      // lista lateral agrupa, e não pelo módulo de origem.
+      modulo: item.conteudoTitulo ?? item.moduloTitulo ?? null,
+      trailItemId: item.id,
+      bloqueada: item.status === "BLOQUEADO" && !item.concluido,
+    });
+  }
+
+  return aulas;
+}
+
 /**
  * A aula da trilha aponta para o player do conteúdo de origem, levando o
  * contexto da trilha para que o progresso dela também seja registrado.
+ *
+ * Continua servindo de reserva para as aulas que o modal não consegue tocar —
+ * as sem `vimeoUri` resolvido.
  */
 function destinoDaAula(item: ItemTrilha, trilhaId: number): string {
   if (!item.conteudoId) return "/trilhas";

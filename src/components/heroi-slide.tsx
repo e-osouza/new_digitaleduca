@@ -78,11 +78,21 @@ export function HeroiSlide({ slides }: { slides: SlideDestaque[] }) {
             >
               <div className="absolute inset-0">
                 {slide.capa && (
+                  /*
+                   * Os três slides ficam montados o tempo todo, para o
+                   * cruzamento de opacidade ter o que animar. Sem prioridade
+                   * declarada, o navegador baixaria as três imagens de largura
+                   * inteira ao mesmo tempo e o primeiro quadro — que é o LCP da
+                   * home — disputaria banda com dois slides que ninguém está
+                   * vendo. `low` nos demais mantém a ordem certa sem tirá-los do
+                   * DOM: quando o carrossel virar, eles já terão chegado.
+                   */
                   <Image
                     src={slide.capa}
                     alt=""
                     fill
                     priority={indice === 0}
+                    fetchPriority={indice === 0 ? "high" : "low"}
                     sizes="100vw"
                     className="object-cover object-center"
                   />

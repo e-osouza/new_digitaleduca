@@ -196,10 +196,23 @@ export function listarPlanos() {
 
 /* ---------------- catálogo autenticado ---------------- */
 
+/**
+ * Detalhe do conteúdo. **Sem cache, de propósito.**
+ *
+ * A resposta embute `ProgressoVideo` já filtrado para o usuário logado — é dela
+ * que saem a barra de continuação e o ponto em que o player retoma. Com os 120s
+ * de revalidação que havia aqui, o `router.refresh()` disparado ao fechar o
+ * player relia a mesma cópia guardada e a página continuava mostrando o
+ * progresso anterior à sessão.
+ *
+ * O cache também rendia pouco: como o `Authorization` entra na chave do Data
+ * Cache (ver `generateCacheKey` no Next), cada token gerava sua própria entrada
+ * — nenhum usuário aproveitava a do outro, e o token muda a cada login.
+ */
 export function obterConteudo(id: number) {
   return api<Conteudo>(`/conteudos/${id}`, {
     autenticado: true,
-    revalidar: 120,
+    revalidar: false,
   });
 }
 
@@ -273,6 +286,18 @@ export function paraCard(item: ConteudoEmAndamento): ConteudoResumo {
 }
 
 /**
+ * Tudo que está em andamento, memoizado por requisição.
+ *
+ * É a fonte única de duas coisas que a home precisa: o trilho "Continue de onde
+ * parou" e o mapa de progresso dos demais trilhos. Pedir as duas com limites
+ * diferentes (10 e 100) gerava URLs diferentes, e portanto duas idas à API para
+ * o mesmo dado — a memoização do `fetch` só une chamadas idênticas.
+ *
+ * Cem itens é o teto do acervo por usuário; quem quiser menos corta o resultado.
+ */
+export const progressoEmAndamento = cache(() => emAndamento(100));
+
+/**
  * Mapa `conteudoId → percentual assistido`, para marcar com a barra de
  * continuação os cards que aparecem em qualquer listagem.
  *
@@ -281,7 +306,7 @@ export function paraCard(item: ConteudoEmAndamento): ConteudoResumo {
  * quem não está logado, porque `emAndamento` já engole o 401.
  */
 export const mapaDeProgresso = cache(async (): Promise<Map<number, number>> => {
-  const itens = await emAndamento(100);
+  const itens = await progressoEmAndamento();
   return new Map(itens.map((item) => [item.conteudoId, item.percentualAssistido]));
 });
 

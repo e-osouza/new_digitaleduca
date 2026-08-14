@@ -81,6 +81,27 @@ export default async function PaginaConteudo({
    * que não faz essa checagem, e a página entra em modo prévia — o botão de
    * reproduzir vira um convite à assinatura, e a lista de aulas perde os links.
    */
+  /*
+   * Disparadas ANTES do detalhe: nenhuma delas depende dele, só do id que já
+   * veio da URL. Esperar `obterConteudo` resolver para então pedir estas quatro
+   * fazia a página abrir em duas idas sequenciais à API em vez de uma.
+   *
+   * O acervo de podcasts é o único usado condicionalmente. Pedi-lo sempre custa
+   * uma chamada pública cacheada por 300s — na prática uma leitura do Data
+   * Cache — e poupa a ida extra justamente nas páginas em que ele importa.
+   *
+   * Nenhuma das quatro rejeita (as três primeiras são `apiOpcional`, a última
+   * leva `catch`), então elas podem ficar pendentes se o detalhe abaixo cair
+   * num `notFound` sem virar unhandled rejection.
+   */
+  const recomendacoesPendente = recomendados(numero, 12);
+  const selecionadosPendente = listarSelecionados();
+  const progressoPendente = mapaDeProgresso();
+  const acervoPodcastsPendente = listarConteudos({
+    tipo: "PODCAST",
+    limit: 200,
+  }).catch(() => null);
+
   let conteudo: Conteudo;
   let bloqueado = false;
 
@@ -137,10 +158,10 @@ export default async function PaginaConteudo({
   const [recomendacoes, selecionados, progresso, acervoPodcasts] =
     await Promise.all([
       // Podcast não usa recomendação: a lista sai do acervo do próprio tipo.
-      ehPodcast ? null : recomendados(numero, 12),
-      listarSelecionados(),
-      mapaDeProgresso(),
-      ehPodcast ? listarConteudos({ tipo: "PODCAST", limit: 200 }) : null,
+      ehPodcast ? null : recomendacoesPendente,
+      selecionadosPendente,
+      progressoPendente,
+      ehPodcast ? acervoPodcastsPendente : null,
     ]);
 
   /*
@@ -352,7 +373,24 @@ export default async function PaginaConteudo({
         </div>
 
         {/* ---- lateral ---- */}
-        <aside className="flex flex-col gap-8">
+        {/*
+          A lateral acompanha a rolagem a partir de `lg`. A coluna principal é
+          bem mais alta que ela — a lista de aulas costuma passar de uma tela —
+          e sem isto a ficha saía de vista logo no começo, deixando meia página
+          de espaço vazio à direita. Abaixo de `lg` não há duas colunas: a
+          lateral vira o fim da página, e grudar não faria sentido.
+
+          `self-start` é o que faz o `sticky` funcionar: como item de grade, o
+          `<aside>` estica até a altura da linha por padrão, e um elemento que
+          preenche a própria área não tem folga para deslizar dentro dela.
+
+          O teto de altura cobre a tela baixa, onde a ficha inteira não caberia
+          — sem ele o pé dela ficaria preso fora do campo de visão. Desconta o
+          cabeçalho do AppShell (4rem) mais as folgas de topo e de base. A calha
+          de 4px (`px-1 -mx-1`) existe porque a rolagem própria recorta na
+          borda: sem ela o anel de foco dos cards seria cortado.
+        */}
+        <aside className="flex flex-col gap-8 lg:sticky lg:top-6 lg:-mx-1 lg:max-h-[calc(100dvh-7rem)] lg:self-start lg:overflow-y-auto lg:px-1">
           {/*
             No podcast a lateral recebe os outros episódios: com um único
             vídeo, instrutor e detalhes cabem embaixo da descrição, que de

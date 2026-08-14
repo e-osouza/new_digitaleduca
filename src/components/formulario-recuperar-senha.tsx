@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo } from "@/components/campo";
+import { CampoSenha } from "@/components/campo-senha";
+import { CampoCodigo } from "@/components/campo-codigo";
+import { BotaoReenviar } from "@/components/botao-reenviar";
 
 type Passo = "email" | "codigo" | "senha" | "pronto";
 
@@ -65,17 +68,31 @@ export function FormularioRecuperarSenha() {
     }
   }
 
+  /* Relança para o `BotaoReenviar` não iniciar a espera depois de uma falha. */
   async function reenviar() {
     setErro("");
-    setEnviando(true);
+    setAviso("");
     try {
       await chamar("/api/senha/solicitar", { email });
-      setAviso("Enviamos um novo código.");
-    } catch {
-      setErro("Não foi possível reenviar agora.");
-    } finally {
-      setEnviando(false);
+    } catch (falha) {
+      setErro(
+        falha instanceof Error ? falha.message : "Não foi possível reenviar agora.",
+      );
+      throw falha;
     }
+    setAviso("Enviamos um novo código. O anterior deixou de valer.");
+  }
+
+  /*
+   * Volta ao primeiro passo. Sem esta saída, quem digitasse o e-mail errado
+   * ficava preso esperando um código que nunca chegaria — o único jeito de sair
+   * era recarregar a página.
+   */
+  function trocarEmail() {
+    setErro("");
+    setAviso("");
+    setToken("");
+    setPasso("email");
   }
 
   if (passo === "pronto") {
@@ -125,34 +142,26 @@ export function FormularioRecuperarSenha() {
           <p className="text-texto-3 text-sm">
             Enviamos um código para <strong className="text-texto-2">{email}</strong>.
           </p>
-          <Campo
-            id="codigo"
-            name="codigo"
-            rotulo="Código de 4 dígitos"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            required
-            maxLength={4}
-            pattern="\d{4}"
-            placeholder="0000"
-          />
-          <button
-            type="button"
-            onClick={reenviar}
-            disabled={enviando}
-            className="text-acento hover:text-acento-hover w-fit text-sm font-semibold transition-colors disabled:opacity-60"
-          >
-            Reenviar código
-          </button>
+          <CampoCodigo id="codigo" name="codigo" rotulo="Código de 4 dígitos" autoFocus />
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <BotaoReenviar aoReenviar={reenviar} ocupado={enviando} />
+            <button
+              type="button"
+              onClick={trocarEmail}
+              disabled={enviando}
+              className="text-texto-3 hover:text-acento w-fit text-sm transition-colors disabled:opacity-60"
+            >
+              Usar outro e-mail
+            </button>
+          </div>
         </>
       )}
 
       {passo === "senha" && (
-        <Campo
+        <CampoSenha
           id="novaSenha"
           name="novaSenha"
           rotulo="Nova senha"
-          type="password"
           autoComplete="new-password"
           required
           minLength={6}

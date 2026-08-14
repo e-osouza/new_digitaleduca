@@ -7,7 +7,9 @@ import { MolduraAcesso } from "@/components/moldura-acesso";
 export const metadata: Metadata = { title: "Criar conta" };
 
 export default async function Cadastro() {
-  if (await estaAutenticado()) redirect("/");
+  // Direto para a plataforma. Mandar para `/` só somava um salto, já que a tela
+  // de login devolve quem tem sessão para cá.
+  if (await estaAutenticado()) redirect("/inicio");
 
   return (
     <MolduraAcesso

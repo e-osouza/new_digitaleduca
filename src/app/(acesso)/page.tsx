@@ -22,9 +22,13 @@ export const metadata: Metadata = { title: "Entrar" };
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ proximo?: string; expirada?: string }>;
+  searchParams: Promise<{
+    proximo?: string;
+    expirada?: string;
+    criada?: string;
+  }>;
 }) {
-  const { proximo, expirada } = await searchParams;
+  const { proximo, expirada, criada } = await searchParams;
 
   // Quem chega vindo de /api/auth/expirar já teve o cookie apagado; não faz
   // sentido conferir a sessão de novo.
@@ -37,9 +41,19 @@ export default async function Home({
     <MolduraAcesso
       titulo="Entrar"
       descricao="Acesse suas trilhas, aulas e o progresso de onde parou."
+      /*
+       * `criada=1` chega de quem acabou de se cadastrar sem que o login
+       * automático desse certo. Sem esta nota, a pessoa criava a conta e caía
+       * num formulário de login em branco, sem saber se tinha funcionado.
+       */
       aviso={
         expirada ? (
           <Nota>Sua sessão expirou. Entre de novo para continuar de onde parou.</Nota>
+        ) : criada ? (
+          <Nota>
+            Conta criada. Entre com o e-mail e a senha que você acabou de
+            cadastrar.
+          </Nota>
         ) : null
       }
     >

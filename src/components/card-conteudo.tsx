@@ -75,8 +75,14 @@ export function CardConteudo({
       className={`group focus-visible:outline-acento ease-suave block shrink-0 transition-transform duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 ${largura}`}
     >
       <article className="flex w-full flex-col gap-2.5">
+        {/*
+          Sem borda: a capa sangra até o canto arredondado. A moldura clara
+          desenhava um retângulo em volta de cada arte e, num trilho, virava
+          uma grade de contornos disputando atenção com as próprias imagens.
+          O realce de hover fica por conta da sombra e do zoom da capa.
+        */}
         <div
-          className={`bg-superficie border-borda-suave group-hover:border-acento/60 group-hover:shadow-acento/10 ease-suave relative overflow-hidden rounded-xl border transition-[border-color,box-shadow] duration-300 group-hover:shadow-lg ${
+          className={`bg-superficie group-hover:shadow-acento/10 ease-suave relative overflow-hidden rounded-xl transition-shadow duration-300 group-hover:shadow-lg ${
             deitado
               ? "aspect-video"
               : quadrado
@@ -100,6 +106,19 @@ export function CardConteudo({
             <div className="text-texto-3 flex h-full items-center justify-center text-xs">
               sem capa
             </div>
+          )}
+
+          {/*
+            Véu no pé da capa, só quando há barra. Ele existe para a barra não
+            depender da foto: sobre um fundo claro ou movimentado, o azul
+            sozinho se dissolvia. Vem antes dos selos no DOM para ficar atrás
+            deles.
+          */}
+          {typeof progresso === "number" && progresso > 0 && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/75 via-black/35 to-transparent"
+            />
           )}
 
           {typeof numero === "number" && (
@@ -128,10 +147,10 @@ export function CardConteudo({
               aria-valuemax={100}
               aria-valuenow={Math.round(Math.min(progresso, 100))}
               aria-label={`${Math.round(Math.min(progresso, 100))}% assistido`}
-              className="absolute inset-x-0 bottom-0 h-[5px] bg-black/45 backdrop-blur-[1px]"
+              className="absolute inset-x-0 bottom-0 h-1.5 bg-black/60"
             >
               <div
-                className="bg-acento-claro h-full shadow-[0_0_8px_0] shadow-acento-claro/50"
+                className="bg-progresso shadow-progresso/70 h-full shadow-[0_0_10px_1px]"
                 style={{ width: `${Math.min(progresso, 100)}%` }}
               />
             </div>

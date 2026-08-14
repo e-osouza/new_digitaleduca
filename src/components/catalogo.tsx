@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  emAndamento,
   listarConteudos,
   listarTodasCategorias,
   listarInstrutores,
   maisAssistidosSemPodcast,
   mapaDeProgresso,
   paraCard,
+  progressoEmAndamento,
 } from "@/lib/queries";
 import {
   capaDoConteudo,
@@ -23,27 +23,43 @@ import { HeroiSlide } from "@/components/heroi-slide";
 
 /** Home de quem já entrou: catálogo completo em trilhos. */
 export async function Catalogo() {
-  const [destaques, maisAssistidos, aulas, palestras, podcasts, instrutores] =
-    await Promise.all([
-      listarConteudos({ destaque: true, limit: 12 }),
-      maisAssistidosSemPodcast(10),
-      listarConteudos({ tipo: "AULA", limit: 12 }),
-      listarConteudos({ tipo: "PALESTRA", limit: 12 }),
-      listarConteudos({ tipo: "PODCAST", limit: 12 }),
-      listarInstrutores(14),
-    ]);
-
-  const categorias = (await listarTodasCategorias()) ?? [];
-
-  // Já vem com título, capas e duração — sem precisar cruzar com o catálogo.
-  const continuar = await emAndamento(10);
-
   /*
-   * Mesmo dado do trilho acima, indexado por conteúdo: é o que marca com a
-   * barra de continuação os cards que se repetem nos demais trilhos. A chamada
-   * é deduplicada por requisição, então não custa uma ida extra à API.
+   * Tudo numa leva só. As categorias e o progresso ficavam em `await` próprios
+   * depois deste bloco, o que transformava a home em quatro idas sequenciais à
+   * API — cada uma esperando a anterior sem precisar de nada dela.
+   *
+   * `progressoEmAndamento` e `mapaDeProgresso` são o MESMO pedido: o segundo é
+   * derivado do primeiro e ambos são memoizados por requisição.
    */
-  const progresso = await mapaDeProgresso();
+  const [
+    destaques,
+    maisAssistidos,
+    aulas,
+    palestras,
+    podcasts,
+    instrutores,
+    listaCategorias,
+    // Já vem com título, capas e duração — sem precisar cruzar com o catálogo.
+    emAndamento,
+    /*
+     * Mesmo dado do trilho de continuação, indexado por conteúdo: é o que marca
+     * com a barra os cards que se repetem nos demais trilhos.
+     */
+    progresso,
+  ] = await Promise.all([
+    listarConteudos({ destaque: true, limit: 12 }),
+    maisAssistidosSemPodcast(10),
+    listarConteudos({ tipo: "AULA", limit: 12 }),
+    listarConteudos({ tipo: "PALESTRA", limit: 12 }),
+    listarConteudos({ tipo: "PODCAST", limit: 12 }),
+    listarInstrutores(14),
+    listarTodasCategorias(),
+    progressoEmAndamento(),
+    mapaDeProgresso(),
+  ]);
+
+  const categorias = listaCategorias ?? [];
+  const continuar = emAndamento.slice(0, 10);
 
   /*
    * Até 3 destaques viram slides do topo; o restante segue no trilho abaixo,
@@ -166,6 +182,7 @@ export async function Catalogo() {
             <CardConteudo
               key={conteudo.id}
               conteudo={conteudo}
+              largura="card-trilho-quadrado"
               progresso={progresso.get(conteudo.id)}
             />
           ))}

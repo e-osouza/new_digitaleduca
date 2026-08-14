@@ -114,22 +114,39 @@ function LinhaAula({
           />
         )}
 
-        {/* Marca de reprodução sobre a miniatura. */}
+        {/*
+          Marca sobre a miniatura: play no que falta ver, check verde no que já
+          foi. É a leitura mais rápida do que resta — o texto "concluído" ao
+          lado só se percebe depois de ler a linha inteira.
+        */}
         <span className="absolute inset-0 flex items-center justify-center">
-          <span className="bg-fundo/70 text-texto flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm">
-            <svg viewBox="0 0 16 16" aria-hidden="true" className="h-3.5 w-3.5 translate-x-px" fill="currentColor">
-              <path d="M4 2.5v11l9-5.5-9-5.5Z" />
-            </svg>
+          <span
+            className={`flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm ${
+              progresso?.concluido
+                ? "bg-sucesso text-white"
+                : "bg-fundo/70 text-texto"
+            }`}
+          >
+            {progresso?.concluido ? (
+              <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m5 10.5 3.5 3.5L15 7" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 16 16" aria-hidden="true" className="h-3.5 w-3.5 translate-x-px" fill="currentColor">
+                <path d="M4 2.5v11l9-5.5-9-5.5Z" />
+              </svg>
+            )}
           </span>
         </span>
 
         {percentual > 0 && (
           <span
             role="presentation"
-            className="bg-fundo/70 absolute inset-x-0 bottom-0 h-1"
+            className="absolute inset-x-0 bottom-0 h-1 bg-black/60"
           >
+            {/* Mesmo azul da barra dos cards — ver `--color-progresso`. */}
             <span
-              className="bg-acento block h-full"
+              className="bg-progresso block h-full"
               style={{ width: `${percentual}%` }}
             />
           </span>

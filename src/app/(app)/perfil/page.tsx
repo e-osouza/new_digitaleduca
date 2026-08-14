@@ -138,12 +138,17 @@ export default async function Perfil() {
               Ver todas
             </Link>
           </div>
-          <ul className="border-borda-suave divide-borda-suave divide-y overflow-hidden rounded-xl border">
+          <ul className="border-borda-suave divide-borda-suave bg-superficie divide-y overflow-hidden rounded-xl border">
             {trilhas.slice(0, 4).map((trilha) => (
               <li key={trilha.id}>
+                {/*
+                  O realce da linha desce para a cor da página, e não para
+                  `superficie-2`: esse é o tom da pista da barra de progresso
+                  logo abaixo, que sumiria sob o cursor.
+                */}
                 <Link
                   href={`/trilhas/${trilha.id}`}
-                  className="hover:bg-superficie/60 flex items-center gap-4 px-4 py-3.5 transition-colors"
+                  className="hover:bg-fundo flex items-center gap-4 px-4 py-3.5 transition-colors"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <p className="text-texto truncate text-sm font-semibold">
