@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { formatarDuracao } from "@/lib/format";
 import { Aviso, Campo } from "@/components/campo";
 import type { ConteudoCatalogo } from "@/types/api";
@@ -21,6 +21,26 @@ export function MontadorTrilha({
   >([]);
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
+
+  /**
+   * O catálogo pode repetir o mesmo `videoId` dentro de um conteúdo (aula
+   * ligada a mais de um módulo). Repetido, o vídeo vira duas linhas com a
+   * mesma key e um único estado de seleção — marcar uma marca as duas.
+   */
+  const catalogoUnico = useMemo(
+    () =>
+      catalogo.map((conteudo) => {
+        const vistos = new Set<number>();
+        const aulas = conteudo.aulas.filter((aula) => {
+          if (vistos.has(aula.videoId)) return false;
+          vistos.add(aula.videoId);
+          return true;
+        });
+
+        return { ...conteudo, aulas };
+      }),
+    [catalogo],
+  );
 
   const selecionados = new Set(escolhidas.map((a) => a.videoId));
   const duracaoTotal = escolhidas.reduce((soma, a) => soma + a.duracao, 0);
@@ -103,13 +123,13 @@ export function MontadorTrilha({
           )}
         </h2>
 
-        {catalogo.length === 0 ? (
+        {catalogoUnico.length === 0 ? (
           <p className="text-texto-3 text-sm">
             Nenhum conteúdo disponível no catálogo agora.
           </p>
         ) : (
           <div className="flex flex-col gap-4">
-            {catalogo.map((conteudo) => (
+            {catalogoUnico.map((conteudo) => (
               <details
                 key={conteudo.id}
                 className="border-borda-suave bg-superficie rounded-xl border"
