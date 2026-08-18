@@ -4,7 +4,8 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Player } from "@/components/player";
 import { formatarData, formatarRelogio } from "@/lib/format";
-import { PARAM_EPISODIO } from "@/lib/podcast";
+import Link from "next/link";
+import { PARAM_EPISODIO, rotaDoEpisodio } from "@/lib/podcast";
 import {
   useReprodutorPodcast,
   type Episodio,
@@ -272,8 +273,26 @@ export function PaginaPodcast({
                 )}
               </div>
 
+              {/*
+                Falta de assinatura não é erro técnico: tem desfecho. Aula e
+                palestra já caíam numa tela de conversão; um episódio bloqueado
+                mostrava só o aviso e parava ali. O retorno viaja na URL para a
+                pessoa voltar ao podcast, e não à ficha do conteúdo.
+              */}
               {r.erro && noAr && (
-                <p className="text-alerta text-sm font-medium">{r.erro}</p>
+                <div className="border-alerta/40 bg-alerta/10 flex flex-col items-start gap-3 rounded-xl border p-4">
+                  <p className="text-texto text-sm font-medium">{r.erro}</p>
+                  {r.bloqueado && (
+                    <Link
+                      href={`/planos?conteudo=${emFoco.conteudoId}&voltar=${encodeURIComponent(
+                        rotaDoEpisodio(emFoco.conteudoId),
+                      )}`}
+                      className="bg-acento text-white hover:bg-acento-hover flex min-h-10 items-center rounded-full px-5 text-sm font-bold transition-colors"
+                    >
+                      Ver planos
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
           </div>

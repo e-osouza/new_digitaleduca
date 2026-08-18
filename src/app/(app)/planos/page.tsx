@@ -24,9 +24,9 @@ const INTERVALOS: Record<string, string> = {
 export default async function PaginaPlanos({
   searchParams,
 }: {
-  searchParams: Promise<{ conteudo?: string }>;
+  searchParams: Promise<{ conteudo?: string; voltar?: string }>;
 }) {
-  const [planos, me, { conteudo }] = await Promise.all([
+  const [planos, me, { conteudo, voltar }] = await Promise.all([
     listarPlanos(),
     obterMe(),
     searchParams,
@@ -40,6 +40,22 @@ export default async function PaginaPlanos({
    */
   const bloqueadoId = Number(conteudo);
   const veioDeBloqueio = Number.isInteger(bloqueadoId) && bloqueadoId > 0;
+
+  /*
+   * `?voltar=` diz PARA ONDE devolver, e não só qual conteúdo era. A ficha
+   * deixou de ser o destino único: podcast volta para a própria tela do
+   * podcast, e uma aula aberta por dentro de uma lista volta para a lista.
+   *
+   * Só caminho interno é aceito. Sem essa checagem o parâmetro viraria um
+   * redirecionamento aberto — bastaria alguém compartilhar
+   * `/planos?voltar=https://…` para o link de volta apontar para fora.
+   * `//` também é barrado: `//exemplo.com` é endereço absoluto de protocolo
+   * relativo, e passaria por um teste ingênuo de "começa com barra".
+   */
+  const destinoVolta =
+    voltar && voltar.startsWith("/") && !voltar.startsWith("//")
+      ? voltar
+      : `/conteudo/${bloqueadoId}`;
 
   const pagos = planos
     .filter((plano) => plano.preco > 0)
@@ -92,7 +108,7 @@ export default async function PaginaPlanos({
           </div>
 
           <Link
-            href={`/conteudo/${bloqueadoId}`}
+            href={destinoVolta}
             className="text-acento hover:text-acento-claro text-sm font-semibold transition-colors"
           >
             ← Voltar para o conteúdo

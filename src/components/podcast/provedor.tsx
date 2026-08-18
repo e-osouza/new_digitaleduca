@@ -37,6 +37,11 @@ type Reprodutor = {
   tocando: boolean;
   carregando: boolean;
   erro: string | null;
+  /**
+   * O erro é falta de assinatura, e não falha técnica. Separado porque o
+   * desfecho é outro: aqui há um caminho (assinar), e não só um aviso.
+   */
+  bloqueado: boolean;
   /** Segundos decorridos e totais, já do elemento — não da listagem. */
   tempo: number;
   duracao: number;
@@ -116,6 +121,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
   const [tocando, setTocando] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [bloqueado, setBloqueado] = useState(false);
   const [tempo, setTempo] = useState(0);
   const [duracao, setDuracao] = useState(0);
   const [velocidade, setVelocidade] = useState(1);
@@ -183,6 +189,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
     (alvo: Episodio, novaFila: Episodio[]) => {
       setFila(novaFila);
       setErro(null);
+      setBloqueado(false);
       deveTocarRef.current = true;
 
       // Reabrir o episódio que já está no ar é só um play.
@@ -228,6 +235,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
           const corpo = (await resposta.json().catch(() => ({}))) as {
             erro?: string;
           };
+          if (!cancelado && resposta.status === 403) setBloqueado(true);
           throw new Error(corpo.erro ?? "Não foi possível abrir o episódio.");
         }
 
@@ -523,6 +531,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       tocando,
       carregando,
       erro,
+      bloqueado,
       tempo,
       duracao,
       velocidade,
@@ -548,6 +557,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       tocando,
       carregando,
       erro,
+      bloqueado,
       tempo,
       duracao,
       velocidade,

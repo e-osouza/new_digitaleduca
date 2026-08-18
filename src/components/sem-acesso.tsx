@@ -27,7 +27,15 @@ export function SemAcesso({
   titulo?: string;
 }) {
   const destinoVoltar = voltarPara ?? (conteudoId ? `/conteudo/${conteudoId}` : "/inicio");
-  const destinoPlanos = conteudoId ? `/planos?conteudo=${conteudoId}` : "/planos";
+
+  /*
+   * O destino de volta viaja junto para os planos: quem chegou de um podcast
+   * ou de dentro de uma lista deve voltar para lá, e não para a ficha do
+   * conteúdo. A página de planos valida o caminho antes de usá-lo.
+   */
+  const destinoPlanos = conteudoId
+    ? `/planos?conteudo=${conteudoId}&voltar=${encodeURIComponent(destinoVoltar)}`
+    : "/planos";
 
   return (
     <div className={`${FAIXA} flex justify-center py-10 sm:py-16`}>
