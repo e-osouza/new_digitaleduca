@@ -21,6 +21,12 @@ export type Episodio = {
   /** Segundos, vindos da listagem. */
   duracao: number;
   publicadoEm: string | null;
+  descricao: string | null;
+  instrutores: string[];
+  categoria: string | null;
+  /** 0 a 100, já ouvido. */
+  percentual: number;
+  concluido: boolean;
 };
 
 export type ModoPodcast = "audio" | "video";
@@ -45,6 +51,12 @@ type Reprodutor = {
   proximo: () => void;
   fechar: () => void;
   /**
+   * Episódios terminados NESTA sessão. O que a página recebeu do servidor é de
+   * quando ela carregou — sem isto, ouvir um episódio até o fim só acenderia o
+   * visto na playlist depois de um recarregamento.
+   */
+  concluidos: ReadonlySet<number>;
+  /**
    * Identificadores de reprodução do episódio no ar, resolvidos pelo provedor.
    * É o que a página entrega ao <Player> quando entra em modo vídeo.
    */
@@ -65,8 +77,12 @@ const ContextoPodcast = createContext<Reprodutor | null>(null);
 
 /** A cada quantos segundos de reprodução o progresso é enviado à API. */
 const INTERVALO_PING = 15;
-/** Fração a partir da qual o episódio conta como concluído. */
-const LIMIAR_CONCLUSAO = 0.95;
+/**
+ * Fração a partir da qual o episódio conta como concluído. É exportada porque
+ * a playlist precisa acender o visto no MESMO ponto em que o progresso é
+ * enviado à API — dois limiares diferentes fariam a marca discordar do banco.
+ */
+export const LIMIAR_CONCLUSAO = 0.95;
 
 export function useReprodutorPodcast() {
   const contexto = useContext(ContextoPodcast);
@@ -104,6 +120,13 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
   const [duracao, setDuracao] = useState(0);
   const [velocidade, setVelocidade] = useState(1);
   const [modo, setModo] = useState<ModoPodcast>("audio");
+  const [concluidos, setConcluidos] = useState<ReadonlySet<number>>(new Set());
+
+  /*
+   * Id do episódio no ar, em ref: os ouvintes de mídia abaixo precisam dele,
+   * e tê-lo como dependência os faria reassinar a cada troca de faixa.
+   */
+  const episodioIdRef = useRef<number | null>(null);
 
   /* ---- progresso ---- */
 
@@ -151,6 +174,10 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     modoRef.current = modo;
   }, [modo]);
+
+  useEffect(() => {
+    episodioIdRef.current = episodio?.conteudoId ?? null;
+  }, [episodio]);
 
   const abrir = useCallback(
     (alvo: Episodio, novaFila: Episodio[]) => {
@@ -329,13 +356,14 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       if (!video) return;
       setTempo(video.currentTime);
 
+      const total = video.duration;
+      const terminou = total > 0 && video.currentTime / total >= LIMIAR_CONCLUSAO;
+
+      if (terminou) marcarConcluido();
+
       if (video.currentTime - ultimoPing.current >= INTERVALO_PING) {
         ultimoPing.current = video.currentTime;
-        const total = video.duration;
-        enviarProgresso(
-          video.currentTime,
-          total > 0 && video.currentTime / total >= LIMIAR_CONCLUSAO,
-        );
+        enviarProgresso(video.currentTime, terminou);
       }
     }
 
@@ -352,7 +380,20 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
     }
     function aoTerminar() {
       if (video) enviarProgresso(video.duration, true);
+      marcarConcluido();
       setTocando(false);
+    }
+
+    /*
+     * Acende o visto no MESMO limiar em que a conclusão é enviada à API — dois
+     * pontos diferentes fariam a marca da playlist discordar do banco. Vem de
+     * um ouvinte de evento, e não de um efeito, porque é reação a algo que
+     * aconteceu fora do React.
+     */
+    function marcarConcluido() {
+      const id = episodioIdRef.current;
+      if (id === null) return;
+      setConcluidos((antes) => (antes.has(id) ? antes : new Set(antes).add(id)));
     }
 
     video.addEventListener("timeupdate", aoTempo);
@@ -495,6 +536,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       proximo,
       fechar,
       naPagina,
+      concluidos,
       registrarPagina: setNaPagina,
       midia,
       cederPara,
@@ -518,6 +560,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       proximo,
       fechar,
       naPagina,
+      concluidos,
       midia,
       cederPara,
       retomarEm,

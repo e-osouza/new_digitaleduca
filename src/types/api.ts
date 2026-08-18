@@ -63,7 +63,11 @@ export interface Propaganda {
 }
 
 /** Vem aninhado dentro de Conteudo.instrutores como `{ instrutor: {...} }`. */
+export type PapelInstrutor = "INSTRUTOR" | "APRESENTADOR" | "CONVIDADO";
+
 export interface ConteudoInstrutor {
+  /** Papel no conteúdo — em podcasts distingue apresentador de convidado. */
+  papel?: PapelInstrutor;
   instrutor: Instrutor;
 }
 

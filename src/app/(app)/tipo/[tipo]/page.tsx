@@ -5,6 +5,7 @@ import {
   listarConteudos,
   listarSubcategorias,
   mapaDeProgresso,
+  situacaoDosEpisodios,
 } from "@/lib/queries";
 import { ROTULOS_PLURAIS, TIPOS_NA_URL } from "@/lib/nav";
 import { FAIXA } from "@/lib/ui";
@@ -112,12 +113,20 @@ export default async function PaginaTipo({
    * no meio.
    */
   if (chave === "PODCAST") {
+    /*
+     * A situação de cada episódio (inclusive os TERMINADOS) não existe em
+     * lote — ver `situacaoDosEpisodios`. Só é buscada aqui, na tela que a usa.
+     */
+    const situacao = await situacaoDosEpisodios(filtrados.map((c) => c.id));
+
     return (
       <PaginaPodcast
         descricao={DESCRICOES.PODCAST}
         episodioInicial={Number(episodio) || null}
         episodios={filtrados.map((conteudo) => {
           const { convidado, tema } = separarTitulo(conteudo.titulo);
+          const dele = situacao.get(conteudo.id);
+
           return {
             conteudoId: conteudo.id,
             convidado,
@@ -125,6 +134,18 @@ export default async function PaginaTipo({
             capa: capaVertical(conteudo),
             duracao: duracaoTotal(conteudo),
             publicadoEm: conteudo.dataCriacao,
+            descricao: conteudo.descricao,
+            instrutores: (conteudo.instrutores ?? [])
+              .map((i) => i.instrutor?.nome)
+              .filter((nome): nome is string => Boolean(nome)),
+            categoria: conteudo.categoria?.nome ?? null,
+            /*
+             * `mapaDeProgresso` é o resguardo: ele cobre o que está em
+             * andamento mesmo quando o detalhe do episódio falha ou fica
+             * além do teto de chamadas.
+             */
+            percentual: dele?.percentual ?? progresso.get(conteudo.id) ?? 0,
+            concluido: dele?.concluido ?? false,
           };
         })}
       />

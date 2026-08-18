@@ -4,6 +4,7 @@ import { emAndamento, paraCard } from "@/lib/queries";
 import { CardConteudo } from "@/components/card-conteudo";
 import { EstadoVazio } from "@/components/estado-vazio";
 import { IlustracaoEmAndamentoVazio } from "@/components/ilustracoes";
+import { rotaDoEpisodio } from "@/lib/podcast";
 
 export const metadata: Metadata = { title: "Continuar assistindo" };
 
@@ -62,7 +63,11 @@ export default async function MeusConteudos() {
                * a tocar. `?assistir=1` abre o player em tela cheia sobre a ficha
                * do conteúdo — ao fechar, a pessoa fica nela.
                */
-              href={`/conteudo/${item.conteudoId}?assistir=1`}
+              href={
+                item.tipo === "PODCAST"
+                  ? rotaDoEpisodio(item.conteudoId)
+                  : `/conteudo/${item.conteudoId}?assistir=1`
+              }
               orientacao="horizontal"
             />
           ))}

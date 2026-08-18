@@ -323,6 +323,65 @@ export const mapaDeProgresso = cache(async (): Promise<Map<number, number>> => {
   return new Map(itens.map((item) => [item.conteudoId, item.percentualAssistido]));
 });
 
+/** Situação de um episódio para o usuário logado. */
+export type SituacaoEpisodio = {
+  /** 0 a 100. */
+  percentual: number;
+  concluido: boolean;
+};
+
+/**
+ * Quanto o usuário já ouviu de cada episódio, incluindo os TERMINADOS.
+ *
+ * Existe porque nenhuma fonte em lote serve a esse dado. `em-andamento` (que
+ * alimenta `mapaDeProgresso`) só devolve o que está abaixo de 100%, então
+ * dentro dele "concluído" e "nunca ouvido" são a mesma ausência — impossível
+ * marcar um episódio como ouvido. `ProgressoVideo`, com a bandeira `concluido`,
+ * só vem no detalhe de cada conteúdo.
+ *
+ * Daí o leque de chamadas, uma por episódio. Elas saem em paralelo, então a
+ * espera é a de uma só, e cada falha vira ausência em vez de derrubar a
+ * página. Ainda assim é uma chamada por episódio, e por isso o teto abaixo: o
+ * acervo tem 18 podcasts hoje, mas o custo cresce com ele.
+ *
+ * Um endpoint que devolvesse os conteúdos concluídos do usuário — ou
+ * `ProgressoVideo` na própria listagem — apagaria esta função inteira.
+ */
+const TETO_DETALHES = 40;
+
+export async function situacaoDosEpisodios(
+  ids: number[],
+): Promise<Map<number, SituacaoEpisodio>> {
+  const consultados = ids.slice(0, TETO_DETALHES);
+
+  const respostas = await Promise.all(
+    consultados.map(async (id) => {
+      try {
+        const conteudo = await obterConteudo(id);
+        const video = conteudo.videos?.[0];
+        const progresso = video?.ProgressoVideo?.[0];
+        if (!video || !progresso) return null;
+
+        const duracao = video.duracao ?? 0;
+        const percentual =
+          duracao > 0
+            ? Math.min(Math.round((progresso.segundos / duracao) * 100), 100)
+            : 0;
+
+        return [
+          id,
+          { percentual, concluido: progresso.concluido },
+        ] as const;
+      } catch {
+        // Episódio sem acesso ou fora do ar não deve derrubar a playlist.
+        return null;
+      }
+    }),
+  );
+
+  return new Map(respostas.filter((par) => par !== null));
+}
+
 /**
  * Totais do usuário na plataforma inteira (tempo, vídeos e cursos concluídos).
  * Diferente de `em-andamento`, que só traz o que está abaixo de 100%.

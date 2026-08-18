@@ -7,6 +7,7 @@ import { rotuloTipo } from "@/lib/format";
 import { FAIXA } from "@/lib/ui";
 import { Selo } from "@/components/selo";
 import type { ConteudoDaTrilha, TrilhaDetalhe } from "@/types/api";
+import { rotaDoEpisodio } from "@/lib/podcast";
 
 export async function generateMetadata({
   params,
@@ -128,7 +129,11 @@ function LinhaConteudo({
   return (
     <li>
       <Link
-        href={`/conteudo/${conteudo.id}`}
+        href={
+          conteudo.tipo === "PODCAST"
+            ? rotaDoEpisodio(conteudo.id)
+            : `/conteudo/${conteudo.id}`
+        }
         className="border-borda-suave bg-superficie hover:border-acento/50 hover:bg-superficie-2 ease-suave flex items-center gap-4 rounded-xl border p-3 transition-[border-color,background-color] duration-200 active:scale-[0.995]"
       >
         <span className="text-texto-3 w-6 shrink-0 text-center text-sm font-bold tabular-nums">

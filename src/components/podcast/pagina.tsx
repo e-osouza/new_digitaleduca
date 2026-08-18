@@ -170,11 +170,13 @@ export function PaginaPodcast({
   const tempo = noAr ? r.tempo : 0;
   const preenchido = duracao > 0 ? Math.min((tempo / duracao) * 100, 100) : 0;
   const modoVideo = r.modo === "video";
+  const ouvidoEmFoco = r.concluidos.has(emFoco.conteudoId) || emFoco.concluido;
+  const progressoEmFoco = noAr ? preenchido : emFoco.percentual;
 
   return (
     <div className="calha grid w-full gap-5 py-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:py-8">
       {/* ---------- coluna do player ---------- */}
-      <div className="flex flex-col gap-5">
+      <div className="flex min-w-0 flex-col gap-5">
         <section className="border-borda-suave bg-superficie flex flex-col gap-6 rounded-2xl border p-5 sm:p-7">
           {/*
             Em vídeo o quadro ocupa a largura inteira do cartão e o texto desce
@@ -285,7 +287,7 @@ export function PaginaPodcast({
           {!modoVideo && (
           <div className="border-borda-suave flex flex-col gap-5 border-t pt-5">
             <div className="flex items-center gap-3">
-              <span className="text-texto-3 w-12 shrink-0 text-xs tabular-nums">
+              <span className="text-texto-3 w-10 shrink-0 text-[11px] tabular-nums sm:w-12 sm:text-xs">
                 {formatarRelogio(tempo)}
               </span>
               <input
@@ -297,15 +299,21 @@ export function PaginaPodcast({
                 onChange={(e) => r.irPara(Number(e.target.value))}
                 disabled={!noAr}
                 aria-label="Posição do episódio"
-                className="regua-podcast w-full disabled:opacity-50"
+                className="regua-podcast w-full min-w-0 disabled:opacity-50"
                 style={{ "--preenchido": `${preenchido}%` } as React.CSSProperties}
               />
-              <span className="text-texto-3 w-12 shrink-0 text-right text-xs tabular-nums">
+              <span className="text-texto-3 w-10 shrink-0 text-right text-[11px] tabular-nums sm:w-12 sm:text-xs">
                 {formatarRelogio(duracao)}
               </span>
             </div>
 
-            <div className="flex items-center justify-center gap-6 sm:gap-10">
+            {/*
+              Os rótulos somem no celular: "Velocidade" sozinho mede mais que
+              o botão que ele descreve, e cinco comandos com legenda não cabem
+              numa faixa de 375px. Era esta fileira que empurrava a largura da
+              coluna e estourava a página inteira para fora da tela.
+            */}
+            <div className="flex items-center justify-center gap-4 xs:gap-6 sm:gap-10">
               <Comando
                 rotulo="Velocidade"
                 onClick={() =>
@@ -330,7 +338,7 @@ export function PaginaPodcast({
                 onClick={() => (noAr ? r.alternar() : r.abrir(emFoco, episodios))}
                 disabled={r.carregando}
                 aria-label={r.tocando ? "Pausar" : "Tocar"}
-                className="bg-acento hover:bg-acento-hover flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition-colors disabled:opacity-60"
+                className="bg-acento hover:bg-acento-hover flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition-colors disabled:opacity-60 sm:h-16 sm:w-16"
               >
                 {r.carregando ? (
                   <IconeCarregando />
@@ -353,16 +361,72 @@ export function PaginaPodcast({
           )}
         </section>
 
-        <section className="border-borda-suave bg-superficie flex flex-col gap-4 rounded-2xl border p-5 sm:p-7">
-          <h2 className="font-display font-semibold">Sobre o podcast</h2>
-          <p className="text-texto-2 max-w-prose text-sm leading-relaxed">
+        {/*
+          Ficha do episódio. Ocupa o lugar do antigo "Sobre o podcast", que
+          repetia a mesma frase em todos os episódios — abaixo do player o que
+          se quer saber é sobre o que está tocando. A descrição do podcast
+          sobrou como rodapé, que é o peso que ela merece.
+        */}
+        <section className="border-borda-suave bg-superficie flex flex-col gap-5 rounded-2xl border p-5 sm:p-7">
+          <h2 className="font-display font-semibold">Sobre o episódio</h2>
+
+          {emFoco.descricao ? (
+            <p className="text-texto-2 max-w-prose text-sm leading-relaxed">
+              {emFoco.descricao}
+            </p>
+          ) : (
+            <p className="text-texto-3 text-sm">
+              Este episódio ainda não tem descrição.
+            </p>
+          )}
+
+          {/*
+            Grade, e não linha corrida: os rótulos mudam de episódio para
+            episódio (nem todo um tem nível ou categoria) e uma lista de pares
+            aguenta as ausências sem deixar buraco.
+          */}
+          <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+            <Ficha rotulo="Convidado" valor={emFoco.convidado} />
+            {emFoco.instrutores.length > 0 && (
+              <Ficha
+                rotulo={
+                  emFoco.instrutores.length > 1 ? "Apresentam" : "Apresenta"
+                }
+                valor={emFoco.instrutores.join(", ")}
+              />
+            )}
+            {emFoco.categoria && (
+              <Ficha rotulo="Categoria" valor={emFoco.categoria} />
+            )}
+            <Ficha rotulo="Duração" valor={formatarRelogio(duracao)} />
+            {emFoco.publicadoEm && (
+              <Ficha
+                rotulo="Publicado em"
+                valor={formatarData(emFoco.publicadoEm)}
+              />
+            )}
+            <Ficha
+              rotulo="Você ouviu"
+              valor={
+                ouvidoEmFoco
+                  ? "O episódio inteiro"
+                  : progressoEmFoco > 0
+                    ? `${Math.round(progressoEmFoco)}% — faltam ${formatarRelogio(
+                        Math.max(duracao - (progressoEmFoco / 100) * duracao, 0),
+                      )}`
+                    : "Ainda não começou"
+              }
+            />
+          </dl>
+
+          <p className="border-borda-suave text-texto-3 border-t pt-4 text-xs leading-relaxed">
             {descricao}
           </p>
         </section>
       </div>
 
       {/* ---------- playlist ---------- */}
-      <section className="border-borda-suave bg-superficie flex h-fit flex-col gap-3 rounded-2xl border p-4 sm:p-5 lg:sticky lg:top-4">
+      <section className="border-borda-suave bg-superficie flex h-fit min-w-0 flex-col gap-3 rounded-2xl border p-4 sm:p-5 lg:sticky lg:top-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display font-semibold">Playlist</h2>
           <span className="text-texto-3 text-xs tabular-nums">
@@ -374,6 +438,22 @@ export function PaginaPodcast({
         <ul className="-mx-1 flex max-h-[62vh] flex-col gap-1 overflow-y-auto px-1">
           {episodios.map((ep, indice) => {
             const atual = r.episodio?.conteudoId === ep.conteudoId;
+
+            /*
+             * O episódio no ar informa a si mesmo: o percentual do servidor é
+             * de quando a página carregou, e ver a própria barra parada
+             * enquanto se ouve seria estranho.
+             */
+            const andamento =
+              atual && r.duracao > 0
+                ? Math.min((r.tempo / r.duracao) * 100, 100)
+                : ep.percentual;
+
+            const ouvido = r.concluidos.has(ep.conteudoId) || ep.concluido;
+            const restante = Math.max(
+              ep.duracao - (andamento / 100) * ep.duracao,
+              0,
+            );
 
             return (
               <li key={ep.conteudoId}>
@@ -402,15 +482,32 @@ export function PaginaPodcast({
                         alt=""
                         fill
                         sizes="48px"
-                        className="object-cover"
+                        className={`object-cover ${ouvido ? "opacity-45" : ""}`}
                       />
+                    )}
+
+                    {/*
+                      O visto fica SOBRE a capa, e não numa coluna própria: a
+                      linha já tem número, título, tema e duração, e mais uma
+                      coluna espremeria o texto que importa.
+                    */}
+                    {ouvido && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/45">
+                        <span className="bg-sucesso flex h-6 w-6 items-center justify-center rounded-full text-white">
+                          <IconeVisto />
+                        </span>
+                      </span>
                     )}
                   </span>
 
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span
                       className={`truncate text-sm font-semibold ${
-                        atual ? "text-acento" : "text-texto"
+                        atual
+                          ? "text-acento"
+                          : ouvido
+                            ? "text-texto-3"
+                            : "text-texto"
                       }`}
                     >
                       {ep.convidado}
@@ -420,9 +517,32 @@ export function PaginaPodcast({
                         {ep.tema}
                       </span>
                     )}
-                    <span className="text-texto-3 text-xs tabular-nums">
-                      {formatarRelogio(ep.duracao)}
+
+                    <span className="text-texto-3 flex items-center gap-2 text-xs tabular-nums">
+                      {ouvido ? (
+                        <span className="text-sucesso font-semibold">Ouvido</span>
+                      ) : (
+                        formatarRelogio(ep.duracao)
+                      )}
+                      {!ouvido && andamento > 0 && (
+                        <span>· faltam {formatarRelogio(restante)}</span>
+                      )}
                     </span>
+
+                    {/*
+                      A barra só aparece no que foi COMEÇADO e não terminado —
+                      é a pergunta que ela responde ("o que falta acabar"). Numa
+                      lista em que toda linha tem barra, as cheias e as vazias
+                      viram ruído e a informação some.
+                    */}
+                    {!ouvido && andamento > 0 && (
+                      <span className="bg-superficie-2 mt-1 block h-1 overflow-hidden rounded-full">
+                        <span
+                          className="bg-acento ease-suave block h-full rounded-full transition-[width] duration-500"
+                          style={{ width: `${andamento}%` }}
+                        />
+                      </span>
+                    )}
                   </span>
                 </button>
               </li>
@@ -435,6 +555,18 @@ export function PaginaPodcast({
 }
 
 /* ------------------------------------------------------------------ */
+
+/** Par rótulo/valor da ficha do episódio. */
+function Ficha({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-texto-3 text-[11px] font-semibold tracking-[0.08em] uppercase">
+        {rotulo}
+      </dt>
+      <dd className="text-texto-2 text-sm">{valor}</dd>
+    </div>
+  );
+}
 
 /** Botão secundário do painel de controles: ícone em cima, rótulo embaixo. */
 function Comando({
@@ -453,10 +585,11 @@ function Comando({
       type="button"
       onClick={onClick}
       disabled={desativado}
+      aria-label={rotulo}
       className="text-texto-2 hover:text-acento flex flex-col items-center gap-1.5 transition-colors disabled:opacity-40"
     >
       <span className="flex h-6 items-center justify-center">{children}</span>
-      <span className="text-[11px] font-medium">{rotulo}</span>
+      <span className="xs:block hidden text-[11px] font-medium">{rotulo}</span>
     </button>
   );
 }
@@ -565,6 +698,14 @@ function IconeRelogio() {
     <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="10" cy="10" r="7.5" />
       <path d="M10 5.5V10l3 1.8" />
+    </svg>
+  );
+}
+
+function IconeVisto() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m5 10.5 3.5 3.5L15 6.5" />
     </svg>
   );
 }

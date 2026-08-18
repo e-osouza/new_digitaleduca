@@ -17,6 +17,7 @@ import { FAIXA } from "@/lib/ui";
 import { CardConteudo } from "@/components/card-conteudo";
 import { Selo } from "@/components/selo";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { rotaDoEpisodio } from "@/lib/podcast";
 
 export const metadata: Metadata = { title: "Meu perfil" };
 
@@ -137,7 +138,11 @@ export default async function Perfil() {
                 orientacao="horizontal"
                 progresso={item.percentualAssistido}
                 duracaoSegundos={item.duracao}
-                href={`/conteudo/${item.conteudoId}?assistir=1`}
+                href={
+                  item.tipo === "PODCAST"
+                    ? rotaDoEpisodio(item.conteudoId)
+                    : `/conteudo/${item.conteudoId}?assistir=1`
+                }
               />
             ))}
           </div>
