@@ -153,8 +153,8 @@ export function PaginaPodcast({
    * Sair da tela devolve o episódio ao áudio — SEMPRE, e não só quando o vídeo
    * chegou a andar. Em modo vídeo o elemento do provedor fica sem fonte
    * nenhuma, de propósito; sem esta volta, o mini player apareceria no rodapé
-   * sem ter o que tocar. Em modo áudio a chamada é inofensiva: o modo já é
-   * esse e nada é reanexado.
+   * sem ter o que tocar. Em modo áudio o provedor ignora a chamada — ver
+   * `retomarEm`, onde está o porquê.
    */
   useEffect(() => {
     return () => {

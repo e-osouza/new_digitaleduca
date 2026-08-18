@@ -146,6 +146,12 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
     velocidadeRef.current = velocidade;
   }, [velocidade]);
 
+  /* Mesmo motivo: `retomarEm` precisa do modo atual e não pode depender dele. */
+  const modoRef = useRef(modo);
+  useEffect(() => {
+    modoRef.current = modo;
+  }, [modo]);
+
   const abrir = useCallback(
     (alvo: Episodio, novaFila: Episodio[]) => {
       setFila(novaFila);
@@ -444,6 +450,18 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
    * <Player>. As refs abaixo são o recado para quando ela chegar.
    */
   const retomarEm = useCallback((segundos: number, deveTocar: boolean) => {
+    /*
+     * Já em áudio não há reprodução a devolver — quem chamou está saindo de
+     * uma tela que nunca teve o comando.
+     *
+     * Sem esta saída, a limpeza de desmontagem da página apagava um
+     * `deveTocar` recém-escrito por `abrir`, e o episódio aberto por um card
+     * chegava carregado mas PARADO. Em desenvolvimento isso era certeiro: o
+     * React monta, desmonta e monta de novo, então a limpeza rodava sempre
+     * entre o pedido e a anexação da fonte.
+     */
+    if (modoRef.current === "audio") return;
+
     /*
      * Zero significa "o vídeo nunca andou", e não "volte para o começo" — o
      * ponto salvo do episódio já está na ref, vindo da etapa 1. Sobrescrevê-lo
