@@ -34,8 +34,9 @@ export function Player({
   titulo,
   autoIniciar = true,
   aoFinalizar,
-  trilhaId = null,
-  trailItemId = null,
+  listaId = null,
+  listaItemId = null,
+  aoProgredir,
 }: {
   vimeoId: string;
   /** ID do vídeo no banco — é ele que o endpoint de progresso espera. */
@@ -50,12 +51,21 @@ export function Player({
    */
   aoFinalizar?: () => void;
   /**
-   * Contexto da trilha. O backend mantém o progresso da trilha separado do
+   * Contexto da lista. O backend mantém o progresso da lista separado do
    * progresso global do vídeo, então quando a aula é aberta por dentro de uma
-   * trilha precisamos avisar os dois endpoints.
+   * lista precisamos avisar os dois endpoints.
    */
-  trilhaId?: number | null;
-  trailItemId?: number | null;
+  listaId?: number | null;
+  listaItemId?: number | null;
+  /**
+   * Posição atual, a cada avanço de tempo.
+   *
+   * Existe para quem precisa CONTINUAR de onde este player parou — o podcast
+   * alterna entre vídeo e áudio sem reiniciar o episódio, e o ping de
+   * progresso (a cada 15s) seria impreciso demais para isso. Chega em todo
+   * `timeupdate`, então quem consome deve gravar numa ref, nunca em estado.
+   */
+  aoProgredir?: (segundos: number) => void;
 }) {
   /*
    * O elemento é guardado nos dois formatos de propósito:
@@ -151,13 +161,13 @@ export function Player({
         // Progresso é acessório: uma falha aqui não interrompe a reprodução.
       });
 
-      // Assistir por dentro de uma trilha também avança a barra dela.
-      if (trilhaId !== null && trailItemId !== null) {
-        void fetch(`/api/trilhas/${trilhaId}/progresso`, {
+      // Assistir por dentro de uma lista também avança a barra dela.
+      if (listaId !== null && listaItemId !== null) {
+        void fetch(`/api/listas/${listaId}/progresso`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            trailItemId,
+            listaItemId,
             videoId,
             segundos: inteiro,
             concluido,
@@ -166,7 +176,7 @@ export function Player({
         }).catch(() => {});
       }
     },
-    [videoId, trilhaId, trailItemId],
+    [videoId, listaId, listaItemId],
   );
 
   /* ---- carrega a fonte ---- */
@@ -452,7 +462,7 @@ export function Player({
 
   /*
    * Fim da reprodução. Fica num efeito próprio, e não junto do envio de
-   * progresso: aquele depende de `videoId` e `trilhaId`, e amarrar o callback
+   * progresso: aquele depende de `videoId` e `listaId`, e amarrar o callback
    * do pai ali faria a assinatura toda ser refeita a cada render dele.
    */
   useEffect(() => {
@@ -490,6 +500,8 @@ export function Player({
     function aoAvancar() {
       if (!video) return;
       const atual = video.currentTime;
+
+      aoProgredir?.(atual);
 
       if (atual - ultimoEnvio.current >= INTERVALO_PING) {
         ultimoEnvio.current = atual;
@@ -531,7 +543,7 @@ export function Player({
         enviarProgresso(video.currentTime, false);
       }
     };
-  }, [enviarProgresso, videoId, montado]);
+  }, [enviarProgresso, videoId, montado, aoProgredir]);
 
   return (
     <div

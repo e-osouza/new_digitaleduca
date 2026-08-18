@@ -11,6 +11,12 @@ export type SlideDestaque = {
   titulo: string;
   descricao: string | null;
   capa: string | null;
+  /*
+   * Destino do clique, montado por quem constrói o slide. Vem pronto porque o
+   * herói não conhece o TIPO cru do conteúdo (recebe o rótulo já traduzido), e
+   * podcast não vai para a ficha como os demais — abre tocando.
+   */
+  href: string;
   tipo: string;
   duracao: string | null;
   instrutor: string | null;
@@ -127,7 +133,7 @@ export function HeroiSlide({ slides }: { slides: SlideDestaque[] }) {
 
                 <div className="pt-1">
                   <Link
-                    href={`/conteudo/${slide.id}`}
+                    href={slide.href}
                     tabIndex={ativo ? undefined : -1}
                     className="bg-acento text-white hover:bg-acento-hover ease-suave inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-sm font-bold transition-all duration-200 hover:gap-3 active:scale-95"
                   >

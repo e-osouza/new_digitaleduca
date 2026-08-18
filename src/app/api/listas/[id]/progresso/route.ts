@@ -3,7 +3,7 @@ import { API_URL } from "@/lib/api";
 import { lerToken } from "@/lib/session";
 
 /**
- * `PATCH /trilhas/{id}/progress` — o progresso da trilha é independente do
+ * `PATCH /listas/{id}/progress` — o progresso da lista é independente do
  * progresso global do vídeo, por isso tem endpoint próprio.
  */
 export async function PATCH(
@@ -27,25 +27,25 @@ export async function PATCH(
     return NextResponse.json({ erro: "Requisição inválida." }, { status: 400 });
   }
 
-  const trailItemId = Number(corpo.trailItemId);
+  const listaItemId = Number(corpo.listaItemId);
   const videoId = Number(corpo.videoId);
   const segundos = Math.max(0, Math.floor(Number(corpo.segundos ?? 0)));
 
-  if (!Number.isInteger(trailItemId) || !Number.isInteger(videoId)) {
+  if (!Number.isInteger(listaItemId) || !Number.isInteger(videoId)) {
     return NextResponse.json(
       { erro: "Item ou vídeo inválido." },
       { status: 400 },
     );
   }
 
-  const resposta = await fetch(`${API_URL}/trilhas/${id}/progress`, {
+  const resposta = await fetch(`${API_URL}/listas/${id}/progress`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      trailItemId,
+      listaItemId,
       videoId,
       segundos,
       concluido: Boolean(corpo.concluido),

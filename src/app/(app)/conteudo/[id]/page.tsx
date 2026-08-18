@@ -7,7 +7,7 @@ import { encerrarSessaoExpirada } from "@/lib/sessao-expirada";
 import {
   fichaPelaListagem,
   listarConteudos,
-  listarSelecionados,
+  listarSalvos,
   mapaDeProgresso,
   obterConteudo,
   recomendados,
@@ -95,7 +95,7 @@ export default async function PaginaConteudo({
    * num `notFound` sem virar unhandled rejection.
    */
   const recomendacoesPendente = recomendados(numero, 12);
-  const selecionadosPendente = listarSelecionados();
+  const salvosPendente = listarSalvos();
   const progressoPendente = mapaDeProgresso();
   const acervoPodcastsPendente = listarConteudos({
     tipo: "PODCAST",
@@ -155,11 +155,11 @@ export default async function PaginaConteudo({
       : aulas.length > 1
         ? "Começar a primeira aula"
         : "Assistir";
-  const [recomendacoes, selecionados, progresso, acervoPodcasts] =
+  const [recomendacoes, salvos, progresso, acervoPodcasts] =
     await Promise.all([
       // Podcast não usa recomendação: a lista sai do acervo do próprio tipo.
       ehPodcast ? null : recomendacoesPendente,
-      selecionadosPendente,
+      salvosPendente,
       progressoPendente,
       ehPodcast ? acervoPodcastsPendente : null,
     ]);
@@ -183,9 +183,9 @@ export default async function PaginaConteudo({
    */
   const relacionados = normalizarRecomendados(recomendacoes);
 
-  // O id do vínculo é o que a API usa para remover da lista.
+  // O id do vínculo é o que a API usa para remover dos salvos.
   const vinculoNaLista =
-    selecionados.find((item) => item.conteudo?.id === numero)?.id ?? null;
+    salvos.find((item) => item.conteudo?.id === numero)?.id ?? null;
 
   return (
     <div className="flex flex-col gap-10 pb-8 sm:gap-14">
@@ -307,7 +307,7 @@ export default async function PaginaConteudo({
                 />
               ))}
 
-            <BotaoSalvar conteudoId={conteudo.id} selecionadoId={vinculoNaLista} />
+            <BotaoSalvar conteudoId={conteudo.id} salvoId={vinculoNaLista} />
           </div>
         </div>
       </section>

@@ -12,14 +12,17 @@ const ROTAS_PROTEGIDAS = [
   "/buscar",
   "/tipo",
   "/trilhas",
+  "/listas",
   "/meus-conteudos",
-  "/minha-lista",
+  "/salvos",
   "/verificar-email",
   "/instrutor",
   "/tag",
   "/categoria",
   "/planos",
   "/conta",
+  "/perfil",
+  "/estatisticas",
 ];
 
 export function proxy(request: NextRequest) {

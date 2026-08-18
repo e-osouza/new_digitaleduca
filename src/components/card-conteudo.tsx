@@ -10,6 +10,7 @@ import {
   rotuloTipo,
 } from "@/lib/format";
 import { Selo } from "@/components/selo";
+import { rotaDoEpisodio } from "@/lib/podcast";
 
 type ConteudoDeCard = Conteudo | ConteudoResumo;
 
@@ -69,9 +70,19 @@ export function CardConteudo({
   const duracao =
     duracaoSegundos ?? (temVideos(conteudo) ? duracaoTotal(conteudo) : 0);
 
+  /*
+   * Podcast escapa da ficha do conteúdo e vai direto para a tela do podcast,
+   * já tocando. O `href` explícito continua vencendo — é ele que manda a
+   * vitrine pública para o login.
+   */
+  const destinoPadrao =
+    conteudo.tipo === "PODCAST"
+      ? rotaDoEpisodio(conteudo.id)
+      : `/conteudo/${conteudo.id}`;
+
   return (
     <Link
-      href={href ?? `/conteudo/${conteudo.id}`}
+      href={href ?? destinoPadrao}
       className={`group focus-visible:outline-acento ease-suave block shrink-0 transition-transform duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 ${largura}`}
     >
       <article className="flex w-full flex-col gap-2.5">

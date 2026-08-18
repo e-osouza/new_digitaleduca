@@ -13,7 +13,7 @@ import type {
   Negocio,
   ConteudoEmAndamento,
   ConteudoResumo,
-  ConteudoSelecionado,
+  Salvo,
   PerfilInstrutor,
   Tag,
   TagDetalhe,
@@ -22,11 +22,16 @@ import type {
   ListaPaginada,
   MeResponse,
   Plano,
+  Propaganda,
   ProgressoVideo,
   TipoConteudo,
   TipoDisponivel,
   Trilha,
   TrilhaDetalhe,
+  Lista,
+  ListaDetalhe,
+  EstatisticasUsuario,
+  EstatisticasDetalhadas,
   ConteudoCatalogo,
   Usuario,
   Video,
@@ -194,6 +199,14 @@ export function listarPlanos() {
   return api<Plano[]>("/planos", { revalidar: 3600 });
 }
 
+/** Propagandas ativas para exibir no app do usuário. */
+export async function listarPropagandas(): Promise<Propaganda[]> {
+  const resposta = await apiOpcional<Propaganda[]>("/propagandas", {
+    revalidar: 300,
+  });
+  return resposta ?? [];
+}
+
 /* ---------------- catálogo autenticado ---------------- */
 
 /**
@@ -310,6 +323,28 @@ export const mapaDeProgresso = cache(async (): Promise<Map<number, number>> => {
   return new Map(itens.map((item) => [item.conteudoId, item.percentualAssistido]));
 });
 
+/**
+ * Totais do usuário na plataforma inteira (tempo, vídeos e cursos concluídos).
+ * Diferente de `em-andamento`, que só traz o que está abaixo de 100%.
+ */
+export function obterEstatisticas() {
+  return apiOpcional<EstatisticasUsuario>("/progresso-video/estatisticas", {
+    autenticado: true,
+    revalidar: false,
+  });
+}
+
+/**
+ * Estatísticas detalhadas (consumo por tipo/categoria/instrutor, atividade,
+ * coleções). Com `de`/`ate` (YYYY-MM-DD), restringe ao período; sem eles, tudo.
+ */
+export function obterEstatisticasDetalhadas(de?: string, ate?: string) {
+  return apiOpcional<EstatisticasDetalhadas>(
+    `/progresso-video/estatisticas/detalhado${query({ de, ate })}`,
+    { autenticado: true, revalidar: false },
+  );
+}
+
 export function assistidosRecentemente() {
   return apiOpcional<ProgressoVideo[]>("/progresso-video/recentes", {
     autenticado: true,
@@ -367,10 +402,10 @@ export function obterInteresse() {
  * A API filtra a lista pelo acesso do usuário: sem assinatura, só devolve o
  * que é gratuito. Aceita array puro ou envelope, por segurança.
  */
-export async function listarSelecionados(): Promise<ConteudoSelecionado[]> {
+export async function listarSalvos(): Promise<Salvo[]> {
   const resposta = await apiOpcional<
-    ConteudoSelecionado[] | Envelope<ConteudoSelecionado>
-  >("/conteudos-selecionados", { autenticado: true, revalidar: false });
+    Salvo[] | Envelope<Salvo>
+  >("/salvos", { autenticado: true, revalidar: false });
 
   if (!resposta) return [];
   if (Array.isArray(resposta)) return resposta;
@@ -475,33 +510,44 @@ export async function conteudosDaCategoria(categoriaId: number): Promise<{
 /* ---------------- trilhas ---------------- */
 
 /**
- * Contratos lidos direto do backend (`src/trilhas/`), porque a spec publica os
- * DTOs vazios. Todos os endpoints devolvem `{ data }` nas listagens.
+ * Trilhas de aprendizado (formações) cadastradas pelo admin. É um catálogo
+ * público — só vêm as publicadas — então dá para cachear como o resto do acervo.
  */
 export async function listarTrilhas(): Promise<Trilha[]> {
   const resposta = await apiOpcional<Envelope<Trilha>>("/trilhas", {
+    revalidar: 300,
+  });
+  return resposta?.data ?? [];
+}
+
+export function obterTrilha(id: number) {
+  return apiOpcional<TrilhaDetalhe>(`/trilhas/${id}`, { revalidar: 300 });
+}
+
+/* ---------------- listas (do usuário) ---------------- */
+
+/** As listas que o próprio usuário montou. Vazio para quem não está logado. */
+export async function listarListas(): Promise<Lista[]> {
+  const resposta = await apiOpcional<Envelope<Lista>>("/listas", {
     autenticado: true,
     revalidar: false,
   });
   return resposta?.data ?? [];
 }
 
-export function obterTrilha(id: number) {
-  return apiOpcional<TrilhaDetalhe>(`/trilhas/${id}`, {
+export function obterLista(id: number) {
+  return apiOpcional<ListaDetalhe>(`/listas/${id}`, {
     autenticado: true,
     revalidar: false,
   });
 }
 
-/** Catálogo de conteúdos e aulas para montar a trilha manual. */
-export function catalogoTrilha(opcoes: {
-  q?: string;
-  tipo?: TipoConteudo;
-  page?: number;
-  limit?: number;
-} = {}) {
+/** Catálogo de conteúdos e aulas para montar uma lista. */
+export function catalogoLista(
+  opcoes: { q?: string; tipo?: TipoConteudo; page?: number; limit?: number } = {},
+) {
   return apiOpcional<ListaPaginada<ConteudoCatalogo>>(
-    `/trilhas/catalog${query({ page: 1, limit: 12, ...opcoes })}`,
+    `/listas/catalog${query({ page: 1, limit: 12, ...opcoes })}`,
     { autenticado: true, revalidar: false },
   );
 }

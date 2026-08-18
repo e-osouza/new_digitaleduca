@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import { Modal } from "@/components/modal";
 
 /**
- * Reticências no canto do card da trilha. O clique abre a confirmação de
+ * Reticências no canto do card da lista. O clique abre a confirmação de
  * exclusão — a API marca `archivedAt` em vez de apagar, mas pela interface não
  * há como voltar atrás, então a pergunta é explícita.
  *
  * Fica fora do <Link> do card (botão dentro de âncora é HTML inválido): o card
  * posiciona os dois como irmãos e este vem por cima.
  */
-export function AcoesTrilha({
-  trilhaId,
+export function AcoesLista({
+  listaId,
   titulo,
 }: {
-  trilhaId: number;
+  listaId: number;
   titulo: string;
 }) {
   const router = useRouter();
@@ -38,7 +38,7 @@ export function AcoesTrilha({
     setErro("");
 
     try {
-      const resposta = await fetch(`/api/trilhas/${trilhaId}`, {
+      const resposta = await fetch(`/api/listas/${listaId}`, {
         method: "DELETE",
       });
 
@@ -46,7 +46,7 @@ export function AcoesTrilha({
         const corpo = (await resposta.json().catch(() => ({}))) as {
           erro?: string;
         };
-        setErro(corpo.erro ?? "Não foi possível excluir a trilha.");
+        setErro(corpo.erro ?? "Não foi possível excluir a lista.");
         setEnviando(false);
         return;
       }
@@ -65,7 +65,7 @@ export function AcoesTrilha({
       <button
         type="button"
         onClick={abrir}
-        aria-label={`Excluir a trilha ${titulo}`}
+        aria-label={`Excluir a lista ${titulo}`}
         aria-haspopup="dialog"
         className="bg-fundo/85 text-texto-2 hover:bg-fundo hover:text-texto absolute top-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm hover:scale-105 active:scale-95"
       >
@@ -80,7 +80,7 @@ export function AcoesTrilha({
         aberto={aberto}
         aoFechar={fechar}
         impedirFechar={enviando}
-        titulo="Excluir esta trilha?"
+        titulo="Excluir esta lista?"
       >
         <p className="text-texto-3 -mt-3 text-sm leading-relaxed">
           <span className="text-texto-2 font-medium">{titulo}</span> sai da sua
@@ -109,7 +109,7 @@ export function AcoesTrilha({
             disabled={enviando}
             className="bg-alerta flex min-h-11 items-center rounded-full px-5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60"
           >
-            {enviando ? "Excluindo…" : "Excluir trilha"}
+            {enviando ? "Excluindo…" : "Excluir lista"}
           </button>
         </div>
       </Modal>

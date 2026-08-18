@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { API_URL } from "@/lib/api";
 import { lerToken } from "@/lib/session";
 
-/** Arquiva a trilha. A API não apaga: marca `archivedAt` e some da listagem. */
+/** Remove da lista. O `id` é o do vínculo, não o do conteúdo. */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -17,7 +17,7 @@ export async function DELETE(
     return NextResponse.json({ erro: "ID inválido." }, { status: 400 });
   }
 
-  const resposta = await fetch(`${API_URL}/trilhas/${id}`, {
+  const resposta = await fetch(`${API_URL}/salvos/${id}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
@@ -25,7 +25,7 @@ export async function DELETE(
 
   if (!resposta.ok) {
     return NextResponse.json(
-      { erro: "Não foi possível arquivar a trilha." },
+      { erro: "Não foi possível remover agora." },
       { status: 502 },
     );
   }

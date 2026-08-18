@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Conteudo } from "@/types/api";
 import { capaVertical, duracaoTotal, formatarDuracao } from "@/lib/format";
-import { separarTitulo } from "@/lib/podcast";
+import { rotaDoEpisodio, separarTitulo } from "@/lib/podcast";
 
 /**
  * Episódio na listagem de podcasts, em formato de feed.
@@ -27,7 +27,7 @@ export function ItemPodcast({
 
   return (
     <Link
-      href={`/conteudo/${conteudo.id}`}
+      href={rotaDoEpisodio(conteudo.id)}
       className="group border-borda-suave bg-superficie hover:border-acento/60 focus-visible:outline-acento ease-suave flex items-center gap-4 rounded-xl border p-3 transition-[border-color,background-color] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 sm:gap-5 sm:p-4"
     >
       {/* Capa quadrada: a arte do acervo vem em 850×971, quase quadrada já. */}

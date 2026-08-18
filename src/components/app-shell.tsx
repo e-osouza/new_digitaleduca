@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -102,11 +103,6 @@ const GRUPOS: GrupoNav[] = [
           </>
         ),
       },
-    ],
-  },
-  {
-    titulo: "Meu percurso",
-    itens: [
       {
         href: "/trilhas",
         rotulo: "Trilhas",
@@ -118,9 +114,26 @@ const GRUPOS: GrupoNav[] = [
           </>
         ),
       },
+    ],
+  },
+  {
+    titulo: "Meu percurso",
+    itens: [
       {
-        href: "/minha-lista",
-        rotulo: "Minha lista",
+        href: "/listas",
+        rotulo: "Minhas listas",
+        icone: (
+          <>
+            <path d="M4 5h8" />
+            <path d="M4 10h8" />
+            <path d="M4 15h5" />
+            <circle cx="15.5" cy="14.5" r="2.2" />
+          </>
+        ),
+      },
+      {
+        href: "/salvos",
+        rotulo: "Salvos",
         icone: (
           <>
             <path d="M5.5 3h9a1 1 0 0 1 1 1v13l-5.5-3.5L4.5 17V4a1 1 0 0 1 1-1Z" />
@@ -149,6 +162,15 @@ const GRUPOS: GrupoNav[] = [
           <>
             <circle cx="10" cy="6.5" r="3" />
             <path d="M3.5 17c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
+          </>
+        ),
+      },
+      {
+        href: "/estatisticas",
+        rotulo: "Estatísticas",
+        icone: (
+          <>
+            <path d="M3 17V9M8 17V4M13 17v-6M18 17V7" />
           </>
         ),
       },
@@ -204,11 +226,13 @@ const useEfeitoDeLayout =
 export function AppShell({
   nome,
   email,
+  avatar,
   saudacao,
   children,
 }: {
   nome: string | null;
   email: string | null;
+  avatar: string | null;
   /** Já resolvida no servidor — ver `lib/saudacao`. */
   saudacao: { texto: string; periodo: "dia" | "noite" };
   children: React.ReactNode;
@@ -245,6 +269,7 @@ export function AppShell({
         caminho={caminho}
         nome={nome}
         email={email}
+        avatar={avatar}
         recolhido={recolhido}
         aoAlternarRecolhido={() => gravarRecolhido(!recolhido)}
         className={`border-borda-suave bg-cromo ease-saida relative z-30 hidden shrink-0 border-r transition-[width] duration-300 lg:flex ${
@@ -271,6 +296,7 @@ export function AppShell({
           caminho={caminho}
           nome={nome}
           email={email}
+          avatar={avatar}
           inerte={!gavetaAberta}
           aoNavegar={() => setGavetaAberta(false)}
           className={`border-borda-suave bg-cromo ease-saida relative flex h-full w-[min(19rem,85vw)] border-r shadow-2xl transition-transform duration-300 ${
@@ -338,7 +364,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain">
+        <main className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
           {children}
         </main>
       </div>
@@ -352,6 +378,7 @@ function Navegacao({
   caminho,
   nome,
   email,
+  avatar,
   className,
   aoNavegar,
   inerte = false,
@@ -361,6 +388,7 @@ function Navegacao({
   caminho: string;
   nome: string | null;
   email: string | null;
+  avatar: string | null;
   className: string;
   /** Só a gaveta do mobile precisa reagir: navegar deve fechá-la. */
   aoNavegar?: () => void;
@@ -572,9 +600,15 @@ function Navegacao({
               recolhido ? "justify-center p-1" : "gap-3 p-1"
             }`}
           >
-            <span className="bg-acento/15 text-acento flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
-              {(nome ?? email ?? "?").charAt(0).toUpperCase()}
-            </span>
+            {avatar ? (
+              <span className="bg-superficie-2 relative h-9 w-9 shrink-0 overflow-hidden rounded-full">
+                <Image src={avatar} alt="" fill sizes="36px" className="object-cover" />
+              </span>
+            ) : (
+              <span className="bg-acento/15 text-acento flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+                {(nome ?? email ?? "?").charAt(0).toUpperCase()}
+              </span>
+            )}
             {!recolhido && (
               <span className="flex min-w-0 flex-col">
                 {nome && (

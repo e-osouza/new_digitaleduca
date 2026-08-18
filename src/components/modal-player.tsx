@@ -17,11 +17,11 @@ export type AulaDoModal = {
   /** Título do módulo, quando a aula pertence a um. */
   modulo: string | null;
   /**
-   * Item da trilha a que esta aula corresponde. Só existe quando o modal é
-   * aberto por dentro de uma trilha — é o que o endpoint de progresso dela
-   * espera, junto do `trilhaId` passado ao modal.
+   * Item da lista a que esta aula corresponde. Só existe quando o modal é
+   * aberto por dentro de uma lista — é o que o endpoint de progresso dela
+   * espera, junto do `listaId` passado ao modal.
    */
-  trailItemId?: number | null;
+  listaItemId?: number | null;
   /**
    * A aula ainda depende da conclusão da anterior. Instantâneo do servidor: ao
    * terminar a anterior aqui dentro, ela libera sem precisar recarregar.
@@ -47,17 +47,17 @@ export function ModalPlayer({
   aoFechar,
   aulas,
   inicialId,
-  trilhaId = null,
+  listaId = null,
 }: {
   aberto: boolean;
   aoFechar: () => void;
   aulas: AulaDoModal[];
   inicialId: number;
   /**
-   * Trilha de onde as aulas vieram. Quando presente, cada ping do player também
-   * avança a barra da trilha — o backend guarda os dois progressos separados.
+   * Lista de onde as aulas vieram. Quando presente, cada ping do player também
+   * avança a barra da lista — o backend guarda os dois progressos separados.
    */
-  trilhaId?: number | null;
+  listaId?: number | null;
 }) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const router = useRouter();
@@ -69,7 +69,7 @@ export function ModalPlayer({
   /**
    * Aulas terminadas nesta sessão do modal. O `concluido` que veio do servidor é
    * um instantâneo da carga da página; sem isto, terminar uma aula não marcaria
-   * o ✓ na lista nem liberaria a seguinte numa trilha sequencial.
+   * o ✓ na lista nem liberaria a seguinte numa lista sequencial.
    */
   const [concluidasAgora, setConcluidasAgora] = useState<ReadonlySet<number>>(
     () => new Set(),
@@ -87,7 +87,7 @@ export function ModalPlayer({
   }, [aulas, concluidasAgora]);
 
   /*
-   * Quem pode ser reproduzida agora. Só a trilha marca aulas como bloqueadas, e
+   * Quem pode ser reproduzida agora. Só a lista marca aulas como bloqueadas, e
    * a regra dela é uma só: a anterior precisa estar concluída. Como a anterior
    * é a vizinha na lista, terminar uma aula aqui dentro libera a seguinte na
    * hora — o encadeamento automático continua funcionando sem recarregar.
@@ -251,8 +251,8 @@ export function ModalPlayer({
                   titulo={atual.titulo}
                   segundosIniciais={atual.segundosIniciais}
                   aoFinalizar={aoFinalizar}
-                  trilhaId={trilhaId}
-                  trailItemId={atual.trailItemId ?? null}
+                  listaId={listaId}
+                  listaItemId={atual.listaItemId ?? null}
                 />
               )}
 
@@ -332,7 +332,7 @@ function ItemAula({
   aula: AulaDoModal;
   ativa: boolean;
   concluida: boolean;
-  /** Falso só nas trilhas, enquanto a aula anterior não terminar. */
+  /** Falso só nas listas, enquanto a aula anterior não terminar. */
   liberada: boolean;
   aoEscolher: () => void;
 }) {

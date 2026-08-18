@@ -584,6 +584,45 @@ dialog[open]::backdrop {
   border: none;
 }
 
+/*
+  Régua de progresso do player de podcast. Mesma técnica da régua de volume —
+  as partes nativas do <input type=range> não aceitam classe, então o
+  preenchimento vem de um gradiente movido pela variável `--preenchido`.
+
+  Aqui ela usa os tokens da página (e não os do player, que vivem sobre vídeo
+  escuro): o player de podcast mora numa superfície clara.
+*/
+.regua-podcast {
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-acento) 0%,
+    var(--color-acento) var(--preenchido, 0%),
+    var(--color-borda-suave) var(--preenchido, 0%),
+    var(--color-borda-suave) 100%
+  );
+  cursor: pointer;
+}
+
+.regua-podcast::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-acento);
+  border: none;
+}
+
+.regua-podcast::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-acento);
+  border: none;
+}
+
 /* O player esconde a legenda nativa quando os controles cobrem a base. */
 video::cue {
   background: rgb(0 0 0 / 0.75);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { API_URL } from "@/lib/api";
 import { lerToken } from "@/lib/session";
 
-/** Remove da lista. O `id` é o do vínculo, não o do conteúdo. */
+/** Arquiva a lista. A API não apaga: marca `archivedAt` e some da listagem. */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -17,7 +17,7 @@ export async function DELETE(
     return NextResponse.json({ erro: "ID inválido." }, { status: 400 });
   }
 
-  const resposta = await fetch(`${API_URL}/conteudos-selecionados/${id}`, {
+  const resposta = await fetch(`${API_URL}/listas/${id}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
@@ -25,7 +25,7 @@ export async function DELETE(
 
   if (!resposta.ok) {
     return NextResponse.json(
-      { erro: "Não foi possível remover agora." },
+      { erro: "Não foi possível arquivar a lista." },
       { status: 502 },
     );
   }

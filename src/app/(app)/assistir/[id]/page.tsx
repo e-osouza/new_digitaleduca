@@ -23,20 +23,20 @@ export default async function Assistir({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ aula?: string; trilha?: string; item?: string }>;
+  searchParams: Promise<{ aula?: string; lista?: string; item?: string }>;
 }) {
-  const [{ id }, { aula, trilha, item }] = await Promise.all([
+  const [{ id }, { aula, lista, item }] = await Promise.all([
     params,
     searchParams,
   ]);
 
   /*
-   * Contexto opcional de trilha. Quando a aula é aberta por dentro de uma
-   * trilha, o player precisa avisar também o endpoint dela — o backend mantém
+   * Contexto opcional de lista. Quando a aula é aberta por dentro de uma
+   * lista, o player precisa avisar também o endpoint dela — o backend mantém
    * os dois progressos separados.
    */
-  const trilhaId = Number.isInteger(Number(trilha)) ? Number(trilha) : null;
-  const trailItemId = Number.isInteger(Number(item)) ? Number(item) : null;
+  const listaId = Number.isInteger(Number(lista)) ? Number(lista) : null;
+  const listaItemId = Number.isInteger(Number(item)) ? Number(item) : null;
 
   const conteudoId = Number(id);
   if (!Number.isInteger(conteudoId) || conteudoId <= 0) notFound();
@@ -138,8 +138,8 @@ export default async function Assistir({
             videoId={atual.id}
             segundosIniciais={segundosIniciais}
             titulo={atual.titulo}
-            trilhaId={trilhaId}
-            trailItemId={trailItemId}
+            listaId={listaId}
+            listaItemId={listaItemId}
           />
         </div>
 
@@ -159,10 +159,10 @@ export default async function Assistir({
           </h1>
 
           <Link
-            href={trilhaId ? `/trilhas/${trilhaId}` : `/conteudo/${conteudo.id}`}
+            href={listaId ? `/listas/${listaId}` : `/conteudo/${conteudo.id}`}
             className="text-texto-3 hover:text-acento w-fit text-sm transition-colors"
           >
-            ← {trilhaId ? "Voltar para a trilha" : conteudo.titulo}
+            ← {listaId ? "Voltar para a lista" : conteudo.titulo}
           </Link>
 
           <div className="border-borda-suave mt-1 border-t pt-4">
@@ -174,7 +174,7 @@ export default async function Assistir({
             />
           </div>
 
-          {proxima && !trilhaId && (
+          {proxima && !listaId && (
             <Link
               href={`/assistir/${conteudo.id}?aula=${proxima.id}`}
               className="border-borda bg-superficie hover:border-acento/60 hover:bg-superficie-2 mt-2 flex w-fit items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors"

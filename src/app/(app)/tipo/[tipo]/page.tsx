@@ -9,7 +9,9 @@ import {
 import { ROTULOS_PLURAIS, TIPOS_NA_URL } from "@/lib/nav";
 import { FAIXA } from "@/lib/ui";
 import { CardConteudo } from "@/components/card-conteudo";
-import { ItemPodcast } from "@/components/item-podcast";
+import { PaginaPodcast } from "@/components/podcast/pagina";
+import { separarTitulo } from "@/lib/podcast";
+import { capaVertical, duracaoTotal } from "@/lib/format";
 import { FiltrosBusca } from "@/components/filtros-busca";
 import { Paginacao } from "@/components/paginacao";
 
@@ -41,12 +43,12 @@ export default async function PaginaTipo({
     pagina?: string;
     categoriaId?: string;
     subcategoriaId?: string;
+    /** Episódio que deve abrir tocando — ver `rotaDoEpisodio`. */
+    episodio?: string;
   }>;
 }) {
-  const [{ tipo }, { pagina, categoriaId, subcategoriaId }] = await Promise.all([
-    params,
-    searchParams,
-  ]);
+  const [{ tipo }, { pagina, categoriaId, subcategoriaId, episodio }] =
+    await Promise.all([params, searchParams]);
 
   const chave = TIPOS_NA_URL[tipo];
   if (!chave) notFound();
@@ -100,6 +102,35 @@ export default async function PaginaTipo({
     (s) => s.categoriaId === undefined || idsCategorias.has(s.categoriaId),
   );
 
+  /*
+   * Podcast não é uma listagem: é um player com playlist. A tela inteira muda,
+   * então ela sai daqui antes do cabeçalho, dos filtros e da paginação — nada
+   * disso serve a um feed de episódios de ~20 min que se ouve em sequência.
+   *
+   * A playlist recebe o acervo INTEIRO, e não a página de 12: quem está
+   * ouvindo passa de um episódio ao seguinte, e paginar isso cortaria a fila
+   * no meio.
+   */
+  if (chave === "PODCAST") {
+    return (
+      <PaginaPodcast
+        descricao={DESCRICOES.PODCAST}
+        episodioInicial={Number(episodio) || null}
+        episodios={filtrados.map((conteudo) => {
+          const { convidado, tema } = separarTitulo(conteudo.titulo);
+          return {
+            conteudoId: conteudo.id,
+            convidado,
+            tema,
+            capa: capaVertical(conteudo),
+            duracao: duracaoTotal(conteudo),
+            publicadoEm: conteudo.dataCriacao,
+          };
+        })}
+      />
+    );
+  }
+
   return (
     <div className={`${FAIXA} flex flex-col gap-6 py-8 sm:gap-8 sm:py-10`}>
       <header className="flex flex-col gap-1.5 sm:gap-2">
@@ -136,34 +167,16 @@ export default async function PaginaTipo({
         </p>
       ) : (
         <>
-          {/*
-            Podcast tem layout próprio: episódio único de ~20 min com o
-            convidado no título. A grade de pôsteres serve a curso e palestra,
-            não a um feed de entrevistas.
-          */}
-          {chave === "PODCAST" ? (
-            <ul className="flex flex-col gap-3">
-              {itens.map((conteudo) => (
-                <li key={conteudo.id}>
-                  <ItemPodcast
-                    conteudo={conteudo}
-                    progresso={progresso.get(conteudo.id)}
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-              {itens.map((conteudo) => (
-                <CardConteudo
-                  key={conteudo.id}
-                  conteudo={conteudo}
-                  largura="w-full"
-                  progresso={progresso.get(conteudo.id)}
-                />
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+            {itens.map((conteudo) => (
+              <CardConteudo
+                key={conteudo.id}
+                conteudo={conteudo}
+                largura="w-full"
+                progresso={progresso.get(conteudo.id)}
+              />
+            ))}
+          </div>
 
           <Paginacao
             base={`/tipo/${tipo}`}

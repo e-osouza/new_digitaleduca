@@ -6,20 +6,20 @@ import { useState } from "react";
 /**
  * Salva ou remove o conteúdo da lista do usuário.
  *
- * `selecionadoId` é o id do VÍNCULO — é ele que a API usa para remover, não o
+ * `salvoId` é o id do VÍNCULO — é ele que a API usa para remover, não o
  * id do conteúdo. Quando vem nulo, o conteúdo ainda não está na lista.
  */
 export function BotaoSalvar({
   conteudoId,
-  selecionadoId = null,
+  salvoId = null,
   rotulo = true,
 }: {
   conteudoId: number;
-  selecionadoId?: number | null;
+  salvoId?: number | null;
   rotulo?: boolean;
 }) {
   const router = useRouter();
-  const [salvo, setSalvo] = useState(selecionadoId !== null);
+  const [salvo, setSalvo] = useState(salvoId !== null);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -29,8 +29,8 @@ export function BotaoSalvar({
 
     try {
       const resposta = salvo
-        ? await fetch(`/api/minha-lista/${selecionadoId}`, { method: "DELETE" })
-        : await fetch("/api/minha-lista", {
+        ? await fetch(`/api/salvos/${salvoId}`, { method: "DELETE" })
+        : await fetch("/api/salvos", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ conteudoId }),
@@ -54,7 +54,7 @@ export function BotaoSalvar({
   }
 
   // Sem o id do vínculo não há como remover; o refresh da página o traz.
-  const podeRemover = !salvo || selecionadoId !== null;
+  const podeRemover = !salvo || salvoId !== null;
 
   return (
     <span className="flex flex-col items-start gap-1">
@@ -63,7 +63,7 @@ export function BotaoSalvar({
         onClick={alternar}
         disabled={ocupado || !podeRemover}
         aria-pressed={salvo}
-        title={salvo ? "Remover da minha lista" : "Salvar na minha lista"}
+        title={salvo ? "Remover dos salvos" : "Salvar nos salvos"}
         className={`flex min-h-11 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition-colors disabled:opacity-60 ${
           salvo
             ? "border-acento bg-acento/10 text-acento"

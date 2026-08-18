@@ -54,6 +54,14 @@ export interface Instrutor {
   totalConteudos?: number;
 }
 
+/** Propaganda/banner (`GET /propagandas`) — imagem que leva a um link. */
+export interface Propaganda {
+  id: number;
+  titulo: string | null;
+  imagem: string;
+  link: string;
+}
+
 /** Vem aninhado dentro de Conteudo.instrutores como `{ instrutor: {...} }`. */
 export interface ConteudoInstrutor {
   instrutor: Instrutor;
@@ -155,6 +163,7 @@ export interface Usuario {
   email: string;
   celular: string | null;
   role: Role;
+  avatar?: string | null;
   emailVerified?: boolean;
   cargo?: string | null;
   funcao?: string | null;
@@ -270,8 +279,8 @@ export interface Interesse {
   estiloAprendizado: string | null;
 }
 
-/** Item de `GET /conteudos-selecionados`. O `id` é do vínculo, não do conteúdo. */
-export interface ConteudoSelecionado {
+/** Item de `GET /salvos`. O `id` é do vínculo, não do conteúdo. */
+export interface Salvo {
   id: number;
   conteudoId?: number;
   conteudo: Conteudo;
@@ -315,15 +324,53 @@ export interface VimeoFonte {
  * OpenAPI publica os três DTOs vazios.
  */
 
-export type StatusTrilha = "NAO_INICIADA" | "EM_ANDAMENTO" | "CONCLUIDA" | string;
-export type StatusItemTrilha = "BLOQUEADO" | "EM_ANDAMENTO" | "CONCLUIDO";
-
-/** Resumo devolvido por `GET /trilhas` (dentro de `{ data }`). */
+/**
+ * Trilha de aprendizado (formação), cadastrada pelo admin: uma sequência
+ * ordenada de conteúdos. O usuário só consome. Resumo de `GET /trilhas`.
+ */
 export interface Trilha {
   id: number;
   titulo: string;
   descricao: string | null;
-  status: StatusTrilha;
+  nivel: string | null;
+  destaque: boolean;
+  publicada: boolean;
+  thumbnailMobile: string | null;
+  thumbnailDesktop: string | null;
+  thumbnailDestaque: string | null;
+  totalConteudos: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Um conteúdo dentro da trilha, na ordem definida pelo admin. */
+export interface ConteudoDaTrilha {
+  ordem: number;
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  tipo: TipoConteudo;
+  level: string | null;
+  gratuitoTipo: GratuitoTipo;
+  thumbnailMobile: string | null;
+  thumbnailDesktop: string | null;
+  thumbnailDestaque: string | null;
+}
+
+/** `GET /trilhas/{id}` — a formação com seus conteúdos ordenados. */
+export interface TrilhaDetalhe extends Trilha {
+  conteudos: ConteudoDaTrilha[];
+}
+
+export type StatusLista = "NAO_INICIADA" | "EM_ANDAMENTO" | "CONCLUIDA" | string;
+export type StatusItemLista = "BLOQUEADO" | "EM_ANDAMENTO" | "CONCLUIDO";
+
+/** Lista do usuário (`GET /listas`): uma sequência de aulas montada por ele. */
+export interface Lista {
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  status: StatusLista;
   progressoPercent: number;
   aulasConcluidas: number;
   totalAulas: number;
@@ -336,8 +383,8 @@ export interface Trilha {
   updatedAt: string;
 }
 
-/** Uma aula dentro da trilha. O progresso éindependente do progresso global. */
-export interface ItemTrilha {
+/** Uma aula dentro da lista. O progresso é independente do progresso global. */
+export interface ItemLista {
   id: number;
   orderIndex: number;
   videoId: number;
@@ -356,19 +403,43 @@ export interface ItemTrilha {
   progressoPercent: number;
   concluido: boolean;
   progressoAtualizadoEm: string | null;
-  status: StatusItemTrilha;
+  status: StatusItemLista;
   vimeoUri: string | null;
 }
 
-/** `GET /trilhas/{id}` — resumo + respostas do questionário + itens. */
-export interface TrilhaDetalhe extends Trilha {
-  objetivo: string | null;
-  areaInteresse: string | null;
-  nivelAtual: string | null;
-  tempoDisponivel: string | null;
-  preferencia: string | null;
-  objetivoFinal: string | null;
-  items: ItemTrilha[];
+/** `GET /listas/{id}` — a lista com suas aulas na ordem escolhida. */
+export interface ListaDetalhe extends Lista {
+  items: ItemLista[];
+}
+
+/** `GET /progresso-video/estatisticas` — totais do usuário na plataforma. */
+export interface EstatisticasUsuario {
+  segundosAssistidos: number;
+  videosConcluidos: number;
+  cursosFinalizados: number;
+  conteudosEmAndamento: number;
+  ultimaAtividade: string | null;
+}
+
+/** `GET /progresso-video/estatisticas/detalhado` — para a página de estatísticas. */
+export interface EstatisticasDetalhadas extends EstatisticasUsuario {
+  membroDesde: string | null;
+  diasAtivos: number;
+  porTipo: {
+    tipo: TipoConteudo;
+    videos: number;
+    concluidos: number;
+    segundos: number;
+  }[];
+  porCategoria: { nome: string; videos: number; segundos: number }[];
+  porInstrutor: { nome: string; avatar: string | null; segundos: number }[];
+  porMes: { mes: string; videos: number; diasAtivos: number }[];
+  /** dia: 0 = domingo … 6 = sábado. */
+  diaSemanaPico: { dia: number; videos: number } | null;
+  listasCriadas: number;
+  salvos: number;
+  avaliacoesFeitas: number;
+  mediaNotasDadas: number | null;
 }
 
 /** Aula disponível no catálogo de montagem manual. */

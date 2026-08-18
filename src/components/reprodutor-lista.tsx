@@ -13,7 +13,7 @@ import type { AulaDoModal } from "@/components/modal-player";
 
 /*
  * Mesmo motivo da página do conteúdo: o player é o maior pedaço de JS da
- * página e a maioria das visitas à trilha só confere o progresso. O chunk desce
+ * página e a maioria das visitas à lista só confere o progresso. O chunk desce
  * quando o ponteiro encosta num item da jornada, não no carregamento.
  */
 const ModalPlayer = dynamic(
@@ -30,12 +30,12 @@ type Comandos = {
 
 /**
  * `null` fora do provedor — é o que permite ao gatilho degradar para um botão
- * inerte se alguém o usar fora da página da trilha.
+ * inerte se alguém o usar fora da página da lista.
  */
 const Contexto = createContext<Comandos | null>(null);
 
 /**
- * Reprodução da trilha no mesmo modal usado nas páginas de conteúdo.
+ * Reprodução da lista no mesmo modal usado nas páginas de conteúdo.
  *
  * O modal é único e vive aqui; os itens da jornada e o botão do cabeçalho só
  * pedem a abertura pelo contexto. Renderizar um `<dialog>` por aula duplicaria
@@ -44,15 +44,15 @@ const Contexto = createContext<Comandos | null>(null);
  * O conteúdo da página continua sendo renderizado no servidor e chega como
  * `children` — este componente não puxa nada disso para o cliente.
  */
-export function ReprodutorTrilha({
+export function ReprodutorLista({
   aulas,
-  trilhaId,
+  listaId,
   inicialId,
   children,
 }: {
   aulas: AulaDoModal[];
-  trilhaId: number;
-  /** Aula em que o modal abre quando ninguém escolhe uma — a próxima da trilha. */
+  listaId: number;
+  /** Aula em que o modal abre quando ninguém escolhe uma — a próxima da lista. */
   inicialId: number;
   children: ReactNode;
 }) {
@@ -87,7 +87,7 @@ export function ReprodutorTrilha({
           aoFechar={() => setAberto(false)}
           aulas={aulas}
           inicialId={atualId}
-          trilhaId={trilhaId}
+          listaId={listaId}
         />
       )}
     </Contexto.Provider>

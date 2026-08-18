@@ -4,22 +4,21 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 /**
- * Arquivar some com a trilha da listagem. A API marca `archivedAt` em vez de
- * apagar, mas o usuário não tem como desfazer pela interface — por isso pede
- * confirmação explícita antes.
+ * Exclui a lista de vez. A API apaga o registro (e, por cascade, os itens e o
+ * progresso) — não há como desfazer, então pede confirmação explícita antes.
  */
-export function BotaoArquivarTrilha({ trilhaId }: { trilhaId: number }) {
+export function BotaoExcluirLista({ listaId }: { listaId: number }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  async function arquivar() {
+  async function excluir() {
     setEnviando(true);
     setErro("");
 
     try {
-      const resposta = await fetch(`/api/trilhas/${trilhaId}`, {
+      const resposta = await fetch(`/api/listas/${listaId}`, {
         method: "DELETE",
       });
 
@@ -27,12 +26,12 @@ export function BotaoArquivarTrilha({ trilhaId }: { trilhaId: number }) {
         const corpo = (await resposta.json().catch(() => ({}))) as {
           erro?: string;
         };
-        setErro(corpo.erro ?? "Não foi possível arquivar.");
+        setErro(corpo.erro ?? "Não foi possível excluir.");
         setEnviando(false);
         return;
       }
 
-      router.replace("/trilhas");
+      router.replace("/listas");
       router.refresh();
     } catch {
       setErro("Falha de conexão.");
@@ -47,7 +46,7 @@ export function BotaoArquivarTrilha({ trilhaId }: { trilhaId: number }) {
         onClick={() => setConfirmando(true)}
         className="border-borda bg-superficie text-texto-2 hover:border-alerta/60 hover:text-alerta flex min-h-11 shrink-0 items-center rounded-full border px-5 text-sm font-semibold transition-colors"
       >
-        Arquivar
+        Excluir lista
       </button>
     );
   }
@@ -55,8 +54,8 @@ export function BotaoArquivarTrilha({ trilhaId }: { trilhaId: number }) {
   return (
     <div className="border-alerta/40 bg-alerta/10 flex flex-col gap-3 rounded-xl border p-4">
       <p className="text-sm">
-        Arquivar esta trilha? Ela sai da sua lista e não dá para desfazer por
-        aqui.
+        Excluir esta lista? Ela é apagada de vez, junto com o progresso dela — e
+        não dá para desfazer. As aulas em si continuam no catálogo.
       </p>
 
       {erro && (
@@ -68,11 +67,11 @@ export function BotaoArquivarTrilha({ trilhaId }: { trilhaId: number }) {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={arquivar}
+          onClick={excluir}
           disabled={enviando}
           className="bg-alerta flex min-h-10 items-center rounded-full px-5 text-sm font-bold text-white transition-opacity disabled:opacity-60"
         >
-          {enviando ? "Arquivando…" : "Sim, arquivar"}
+          {enviando ? "Excluindo…" : "Sim, excluir"}
         </button>
         <button
           type="button"

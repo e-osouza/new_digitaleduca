@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ erro: "conteudoId inválido." }, { status: 400 });
   }
 
-  const resposta = await fetch(`${API_URL}/conteudos-selecionados/create`, {
+  const resposta = await fetch(`${API_URL}/salvos/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     const erro = new ApiError(
       resposta.status,
-      "/conteudos-selecionados/create",
+      "/salvos/create",
       mensagem,
     );
 

@@ -8,9 +8,9 @@ import type { ConteudoCatalogo } from "@/types/api";
 
 /**
  * Montagem manual: escolhe aulas do catálogo e envia `videoIds` na ordem em
- * que foram selecionadas — é essa ordem que vira o `orderIndex` da trilha.
+ * que foram selecionadas — é essa ordem que vira o `orderIndex` da lista.
  */
-export function MontadorTrilha({
+export function MontadorLista({
   catalogo,
 }: {
   catalogo: ConteudoCatalogo[];
@@ -61,11 +61,10 @@ export function MontadorTrilha({
     const dados = new FormData(evento.currentTarget);
 
     try {
-      const resposta = await fetch("/api/trilhas", {
+      const resposta = await fetch("/api/listas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          modo: "manual",
           titulo: String(dados.get("titulo") ?? "").trim(),
           descricao: String(dados.get("descricao") ?? "").trim(),
           videoIds: escolhidas.map((a) => a.videoId),
@@ -78,12 +77,12 @@ export function MontadorTrilha({
       };
 
       if (!resposta.ok) {
-        setErro(corpo.erro ?? "Não foi possível criar a trilha.");
+        setErro(corpo.erro ?? "Não foi possível criar a lista.");
         setEnviando(false);
         return;
       }
 
-      router.replace(corpo.id ? `/trilhas/${corpo.id}` : "/trilhas");
+      router.replace(corpo.id ? `/listas/${corpo.id}` : "/listas");
       router.refresh();
     } catch {
       setErro("Falha de conexão.");
@@ -99,7 +98,7 @@ export function MontadorTrilha({
         <Campo
           id="titulo"
           name="titulo"
-          rotulo="Nome da trilha"
+          rotulo="Nome da lista"
           required
           placeholder="Fundamentos de gestão financeira"
         />
@@ -107,7 +106,7 @@ export function MontadorTrilha({
           id="descricao"
           name="descricao"
           rotulo="Descrição (opcional)"
-          placeholder="Para que serve esta trilha"
+          placeholder="Para que serve esta lista"
         />
       </div>
 
@@ -206,7 +205,7 @@ export function MontadorTrilha({
           ? "Criando…"
           : escolhidas.length === 0
             ? "Escolha ao menos uma aula"
-            : `Criar trilha com ${escolhidas.length} ${escolhidas.length === 1 ? "aula" : "aulas"}`}
+            : `Criar lista com ${escolhidas.length} ${escolhidas.length === 1 ? "aula" : "aulas"}`}
       </button>
     </form>
   );

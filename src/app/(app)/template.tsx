@@ -8,5 +8,11 @@ export default function TemplateApp({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="animate-subir">{children}</div>;
+  /*
+   * `flex-1` repassa a altura da área de conteúdo para a página. Sem isso
+   * nada lá dentro consegue se centrar na vertical: a cadeia toda é dirigida
+   * pelo conteúdo, então `h-full` não resolve em ninguém. Páginas que não
+   * pedem `flex-1` continuam com a altura do próprio conteúdo.
+   */
+  return <div className="animate-subir flex flex-1 flex-col">{children}</div>;
 }

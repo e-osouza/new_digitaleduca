@@ -3,9 +3,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   emAndamento,
-  listarSelecionados,
-  listarTrilhas,
+  listarSalvos,
+  listarListas,
   normalizarMe,
+  obterEstatisticas,
   obterInteresse,
   obterMe,
   obterNegocio,
@@ -15,19 +16,21 @@ import { formatarDuracao } from "@/lib/format";
 import { FAIXA } from "@/lib/ui";
 import { CardConteudo } from "@/components/card-conteudo";
 import { Selo } from "@/components/selo";
-import type { Trilha } from "@/types/api";
+import { AvatarUpload } from "@/components/avatar-upload";
 
 export const metadata: Metadata = { title: "Meu perfil" };
 
 export default async function Perfil() {
-  const [me, interesse, negocio, trilhas, continuar, salvos] = await Promise.all([
-    obterMe(),
-    obterInteresse(),
-    obterNegocio(),
-    listarTrilhas(),
-    emAndamento(8),
-    listarSelecionados(),
-  ]);
+  const [me, interesse, negocio, listas, continuar, salvos, estatisticas] =
+    await Promise.all([
+      obterMe(),
+      obterInteresse(),
+      obterNegocio(),
+      listarListas(),
+      emAndamento(8),
+      listarSalvos(),
+      obterEstatisticas(),
+    ]);
 
   const { usuario, assinatura, temAssinaturaAtiva } = normalizarMe(me);
 
@@ -40,13 +43,20 @@ export default async function Perfil() {
     );
   }
 
-  const numeros = agregar(trilhas);
+  const stats = estatisticas ?? {
+    segundosAssistidos: 0,
+    videosConcluidos: 0,
+    cursosFinalizados: 0,
+    conteudosEmAndamento: 0,
+    ultimaAtividade: null,
+  };
 
   return (
     <div className={`${FAIXA} mx-auto flex max-w-5xl flex-col gap-8 py-8 sm:gap-10 sm:py-10`}>
       <Cabecalho
         nome={usuario.nome}
         email={usuario.email}
+        avatar={usuario.avatar ?? null}
         cargo={usuario.cargo ?? null}
         areaAtuacao={usuario.areaAtuacao ?? null}
         tempoExperiencia={usuario.tempoExperiencia ?? null}
@@ -54,47 +64,54 @@ export default async function Perfil() {
       />
 
       {/*
-        Cada número diz exatamente o que mede.
-        A API não expõe totais do usuário — `/progresso-video/em-andamento`
-        devolve só o que está abaixo de 100%, então um "tempo total assistido"
-        encolheria conforme a pessoa concluísse os cursos. Os agregados das
-        trilhas (`tempoAssistidoSegundos`, `aulasConcluidas`, `sequenciaDias`)
-        são os únicos que o backend fecha de verdade, e é o que rotulamos.
+        Totais reais da plataforma, de `GET /progresso-video/estatisticas`:
+        tempo assistido (posição de retomada, com o vídeo concluído contando
+        pela duração cheia), vídeos e cursos concluídos e o que segue em
+        andamento. Um curso é "finalizado" quando todos os seus vídeos foram
+        concluídos.
       */}
       <section className="flex flex-col gap-3">
-        <TituloSecao>Sua jornada</TituloSecao>
+        <div className="flex items-end justify-between gap-4">
+          <TituloSecao>Sua jornada</TituloSecao>
+          <Link
+            href="/estatisticas"
+            className="text-texto-3 hover:text-acento shrink-0 text-sm transition-colors"
+          >
+            Ver estatísticas
+          </Link>
+        </div>
         <div className="xs:grid-cols-2 grid grid-cols-1 gap-3 lg:grid-cols-4">
           <Estatistica
-            valor={formatarDuracao(numeros.tempoTrilhas) || "0 min"}
-            rotulo="Assistido em trilhas"
-            detalhe="Tempo somado das suas trilhas"
+            valor={formatarDuracao(stats.segundosAssistidos) || "0 min"}
+            rotulo="Tempo assistido"
+            detalhe="No total da plataforma"
           />
           <Estatistica
-            valor={String(numeros.aulasConcluidas)}
+            valor={String(stats.videosConcluidos)}
             rotulo="Aulas concluídas"
-            detalhe={`de ${numeros.totalAulas} nas suas trilhas`}
+            detalhe="Vídeos que você terminou"
           />
           <Estatistica
-            valor={String(numeros.trilhasConcluidas)}
-            rotulo="Trilhas concluídas"
-            detalhe={`de ${trilhas.length} ${trilhas.length === 1 ? "criada" : "criadas"}`}
+            valor={String(stats.cursosFinalizados)}
+            rotulo="Cursos finalizados"
+            detalhe="Conteúdos concluídos por inteiro"
           />
           <Estatistica
-            valor={String(numeros.sequencia)}
-            rotulo={numeros.sequencia === 1 ? "Dia seguido" : "Dias seguidos"}
-            detalhe="Sua melhor sequência"
+            valor={String(stats.conteudosEmAndamento)}
+            rotulo="Em andamento"
+            detalhe="Começados e ainda não terminados"
           />
         </div>
 
         <div className="xs:grid-cols-2 grid grid-cols-1 gap-3">
           <Estatistica
-            valor={String(continuar.length)}
-            rotulo="Conteúdos em andamento"
-            detalhe="Começados e ainda não terminados"
+            valor={String(listas.length)}
+            rotulo={listas.length === 1 ? "Lista criada" : "Listas criadas"}
+            detalhe="Suas coleções de aulas"
           />
           <Estatistica
             valor={String(salvos.length)}
-            rotulo="Salvos na Minha lista"
+            rotulo="Salvos"
             detalhe="Guardados para assistir depois"
           />
         </div>
@@ -127,44 +144,44 @@ export default async function Perfil() {
         </section>
       )}
 
-      {trilhas.length > 0 && (
+      {listas.length > 0 && (
         <section className="flex flex-col gap-3">
           <div className="flex items-end justify-between gap-4">
-            <TituloSecao>Suas trilhas</TituloSecao>
+            <TituloSecao>Suas listas</TituloSecao>
             <Link
-              href="/trilhas"
+              href="/listas"
               className="text-texto-3 hover:text-acento shrink-0 text-sm transition-colors"
             >
               Ver todas
             </Link>
           </div>
           <ul className="border-borda-suave divide-borda-suave bg-superficie divide-y overflow-hidden rounded-xl border">
-            {trilhas.slice(0, 4).map((trilha) => (
-              <li key={trilha.id}>
+            {listas.slice(0, 4).map((lista) => (
+              <li key={lista.id}>
                 {/*
                   O realce da linha desce para a cor da página, e não para
                   `superficie-2`: esse é o tom da pista da barra de progresso
                   logo abaixo, que sumiria sob o cursor.
                 */}
                 <Link
-                  href={`/trilhas/${trilha.id}`}
+                  href={`/listas/${lista.id}`}
                   className="hover:bg-fundo flex items-center gap-4 px-4 py-3.5 transition-colors"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <p className="text-texto truncate text-sm font-semibold">
-                      {trilha.titulo}
+                      {lista.titulo}
                     </p>
                     <div className="bg-superficie-2 h-1.5 w-full overflow-hidden rounded-full">
                       <div
                         className="bg-acento h-full rounded-full"
                         style={{
-                          width: `${Math.min(Math.max(trilha.progressoPercent, 0), 100)}%`,
+                          width: `${Math.min(Math.max(lista.progressoPercent, 0), 100)}%`,
                         }}
                       />
                     </div>
                   </div>
                   <span className="text-texto-3 shrink-0 text-xs tabular-nums">
-                    {trilha.aulasConcluidas}/{trilha.totalAulas}
+                    {lista.aulasConcluidas}/{lista.totalAulas}
                   </span>
                 </Link>
               </li>
@@ -222,6 +239,7 @@ export default async function Perfil() {
 function Cabecalho({
   nome,
   email,
+  avatar,
   cargo,
   areaAtuacao,
   tempoExperiencia,
@@ -229,23 +247,17 @@ function Cabecalho({
 }: {
   nome: string;
   email: string;
+  avatar: string | null;
   cargo: string | null;
   areaAtuacao: string | null;
   tempoExperiencia: string | null;
   plano: string | null;
 }) {
-  // Sem campo de avatar na API: a inicial do nome faz o papel.
-  const inicial = nome.trim().charAt(0).toUpperCase() || "?";
   const linha = [cargo, areaAtuacao].filter(Boolean).join(" · ");
 
   return (
     <header className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-      <span
-        aria-hidden="true"
-        className="bg-acento text-white font-display flex h-20 w-20 shrink-0 items-center justify-center rounded-full text-3xl font-semibold"
-      >
-        {inicial}
-      </span>
+      <AvatarUpload avatar={avatar} nome={nome} />
 
       <div className="flex min-w-0 flex-col gap-1.5">
         <h1 className="font-display text-xl font-semibold tracking-tight text-balance sm:text-2xl lg:text-3xl">
@@ -322,22 +334,3 @@ function Campo({
   );
 }
 
-/**
- * Agregados da jornada. Só as trilhas fecham números confiáveis: o backend
- * mantém `tempoAssistidoSegundos`, `aulasConcluidas` e `sequenciaDias` por
- * trilha, e nenhum outro endpoint do usuário devolve totais.
- */
-function agregar(trilhas: Trilha[]) {
-  return {
-    tempoTrilhas: soma(trilhas, (t) => t.tempoAssistidoSegundos),
-    aulasConcluidas: soma(trilhas, (t) => t.aulasConcluidas),
-    totalAulas: soma(trilhas, (t) => t.totalAulas),
-    trilhasConcluidas: trilhas.filter((t) => t.status === "CONCLUIDA").length,
-    // Sequência é por trilha; a melhor delas representa o hábito da pessoa.
-    sequencia: trilhas.reduce((maior, t) => Math.max(maior, t.sequenciaDias ?? 0), 0),
-  };
-}
-
-function soma(trilhas: Trilha[], escolher: (t: Trilha) => number | undefined) {
-  return trilhas.reduce((total, trilha) => total + (escolher(trilha) ?? 0), 0);
-}

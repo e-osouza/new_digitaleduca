@@ -4,6 +4,7 @@ import {
   listarConteudos,
   listarTodasCategorias,
   listarInstrutores,
+  listarPropagandas,
   maisAssistidosSemPodcast,
   mapaDeProgresso,
   paraCard,
@@ -17,9 +18,11 @@ import {
   rotuloTipo,
 } from "@/lib/format";
 import { CardConteudo } from "@/components/card-conteudo";
+import { rotaDoEpisodio } from "@/lib/podcast";
 import { Trilho } from "@/components/trilho";
 import { iconeDaCategoria } from "@/lib/icones-categoria";
 import { HeroiSlide } from "@/components/heroi-slide";
+import { Propagandas } from "@/components/propagandas";
 
 /** Home de quem já entrou: catálogo completo em trilhos. */
 export async function Catalogo() {
@@ -46,6 +49,7 @@ export async function Catalogo() {
      * com a barra os cards que se repetem nos demais trilhos.
      */
     progresso,
+    propagandas,
   ] = await Promise.all([
     listarConteudos({ destaque: true, limit: 12 }),
     maisAssistidosSemPodcast(10),
@@ -56,6 +60,7 @@ export async function Catalogo() {
     listarTodasCategorias(),
     progressoEmAndamento(),
     mapaDeProgresso(),
+    listarPropagandas(),
   ]);
 
   const categorias = listaCategorias ?? [];
@@ -74,6 +79,10 @@ export async function Catalogo() {
         titulo: conteudo.titulo,
         descricao: conteudo.descricao ? resumir(conteudo.descricao, 220) : null,
         capa: conteudo.thumbnailDestaque ?? capaDoConteudo(conteudo),
+        href:
+          conteudo.tipo === "PODCAST"
+            ? rotaDoEpisodio(conteudo.id)
+            : `/conteudo/${conteudo.id}`,
         tipo: rotuloTipo(conteudo.tipo),
         duracao: segundos > 0 ? formatarDuracao(segundos) : null,
         instrutor: conteudo.instrutores?.[0]?.instrutor?.nome ?? null,
@@ -87,6 +96,8 @@ export async function Catalogo() {
     <div className="flex flex-col gap-10 pb-8 sm:gap-14">
       <HeroiSlide slides={paraSlide} />
 
+      <Propagandas itens={propagandas} />
+
       {continuar.length > 0 && (
         <Trilho
           titulo="Continue de onde parou"
@@ -99,11 +110,15 @@ export async function Catalogo() {
               progresso={item.percentualAssistido}
               duracaoSegundos={item.duracao}
               /*
-               * Abre já no player: a página do conteúdo recebe `?assistir=1` e
-               * sobe o vídeo em tela cheia. Fechar deixa a pessoa na ficha,
-               * sem navegação extra.
+               * Abre já reproduzindo. Para aula e palestra isso é a ficha com
+               * `?assistir=1`, que sobe o vídeo em tela cheia; para podcast é a
+               * própria tela do podcast, que retoma o episódio de onde parou.
                */
-              href={`/conteudo/${item.conteudoId}?assistir=1`}
+              href={
+                item.tipo === "PODCAST"
+                  ? rotaDoEpisodio(item.conteudoId)
+                  : `/conteudo/${item.conteudoId}?assistir=1`
+              }
               orientacao="horizontal"
               largura="card-trilho-largo"
             />

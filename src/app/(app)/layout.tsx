@@ -5,6 +5,8 @@ import { encerrarSessaoExpirada } from "@/lib/sessao-expirada";
 import { AppShell } from "@/components/app-shell";
 import { saudacao } from "@/lib/saudacao";
 import { AvisoEmail } from "@/components/aviso-email";
+import { ProvedorPodcast } from "@/components/podcast/provedor";
+import { MiniPlayerPodcast } from "@/components/podcast/mini-player";
 import type { MeResponse } from "@/types/api";
 
 /** Layout da plataforma logada: menu lateral fixo e conteúdo rolando ao lado. */
@@ -40,14 +42,25 @@ export default async function LayoutApp({
 
   return (
     <Suspense>
-      <AppShell
-        nome={usuario?.nome ?? null}
-        email={usuario?.email ?? null}
-        saudacao={saudacao(usuario?.nome ?? null)}
-      >
-        {precisaConfirmar && <AvisoEmail />}
-        {children}
-      </AppShell>
+      {/*
+        O provedor fica ACIMA do AppShell de propósito: é o que mantém o
+        elemento de mídia montado enquanto as páginas trocam por baixo. Descê-lo
+        para dentro de uma página faria o áudio morrer na primeira navegação, e
+        o mini player do rodapé não teria o que controlar.
+      */}
+      <ProvedorPodcast>
+        <AppShell
+          nome={usuario?.nome ?? null}
+          email={usuario?.email ?? null}
+          avatar={usuario?.avatar ?? null}
+          saudacao={saudacao(usuario?.nome ?? null)}
+        >
+          {precisaConfirmar && <AvisoEmail />}
+          {children}
+        </AppShell>
+
+        <MiniPlayerPodcast />
+      </ProvedorPodcast>
     </Suspense>
   );
 }

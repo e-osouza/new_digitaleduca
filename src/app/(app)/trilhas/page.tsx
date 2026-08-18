@@ -2,107 +2,70 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { listarTrilhas } from "@/lib/queries";
-import { formatarDuracao } from "@/lib/format";
-import { AcoesTrilha } from "@/components/acoes-trilha";
-import { Estatistica, ICONES_ESTATISTICA } from "@/components/estatistica";
+import { Selo } from "@/components/selo";
+import { EstadoVazio } from "@/components/estado-vazio";
+import { IlustracaoSemTrilhas } from "@/components/ilustracoes";
+import type { Trilha } from "@/types/api";
 
 export const metadata: Metadata = { title: "Trilhas" };
+
+/** Capa da trilha: prioriza a arte de destaque, depois desktop, depois mobile. */
+function capaTrilha(trilha: Trilha) {
+  return (
+    trilha.thumbnailDestaque ??
+    trilha.thumbnailDesktop ??
+    trilha.thumbnailMobile
+  );
+}
 
 export default async function PaginaTrilhas() {
   const trilhas = await listarTrilhas();
 
-  /*
-   * Agregados do cabeçalho. Cada campo já vem fechado pelo backend por trilha,
-   * então aqui é só somatório — nenhuma chamada extra à API.
-   */
-  const numeros = {
-    ativas: trilhas.filter((t) => t.status === "EM_ANDAMENTO").length,
-    aulasConcluidas: trilhas.reduce((s, t) => s + (t.aulasConcluidas ?? 0), 0),
-    totalAulas: trilhas.reduce((s, t) => s + (t.totalAulas ?? 0), 0),
-    tempo: trilhas.reduce((s, t) => s + (t.tempoAssistidoSegundos ?? 0), 0),
-  };
+  const vazio = trilhas.length === 0;
 
   return (
-    <div className="calha flex w-full flex-col gap-6 py-8 sm:gap-8 sm:py-10">
+    <div className="calha flex w-full flex-1 flex-col gap-6 py-8 sm:gap-8 sm:py-10">
       {/*
-        Os números ficam ao lado do título, não empilhados: no desktop a
-        coluna de texto sozinha deixaria metade da faixa vazia. No celular a
-        grade quebra para uma coluna e eles caem abaixo da descrição.
+        Sem trilhas o cabeçalho sai de cena — título incluído — e o estado
+        vazio traz o <h1> para o centro, junto da ilustração.
       */}
-      <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
-        <div className="flex flex-col items-start gap-1.5 sm:gap-2">
+      {!vazio && (
+        <header className="flex flex-col items-start gap-1.5 sm:gap-2">
           <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
             Trilhas
           </h1>
           <p className="text-texto-3 text-sm">
-            Sequências de aulas montadas para um objetivo.
+            Formações de aprendizado com curadoria, em sequência.
           </p>
+        </header>
+      )}
 
-          {trilhas.length > 0 && (
-            <Link
-              href="/trilhas/nova"
-              className="bg-acento text-white hover:bg-acento-hover mt-2 flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition-colors"
-            >
-              Nova trilha
-            </Link>
-          )}
-        </div>
-
-        {/*
-          Sem trilha nenhuma os três cartões seriam zeros ao lado de um convite
-          para criar a primeira — ruído. Só aparecem quando há o que medir.
-        */}
-        {trilhas.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-3 lg:shrink-0 lg:gap-4">
-            <Estatistica
-              valor={String(numeros.ativas)}
-              rotulo="Trilhas ativas"
-              detalhe="em andamento"
-              icone={ICONES_ESTATISTICA.livro}
-            />
-            <Estatistica
-              valor={String(numeros.aulasConcluidas)}
-              rotulo="Aulas concluídas"
-              detalhe={`de ${numeros.totalAulas} no total`}
-              icone={ICONES_ESTATISTICA.capelo}
-            />
-            <Estatistica
-              valor={formatarDuracao(numeros.tempo) || "0 min"}
-              rotulo="Tempo total"
-              detalhe="de aprendizado"
-              icone={ICONES_ESTATISTICA.relogio}
-            />
-          </div>
-        )}
-      </header>
-
-      {trilhas.length === 0 ? (
-        <div className="border-borda-suave bg-superficie flex flex-col items-start gap-4 rounded-xl border p-6 sm:p-8">
-          <div className="flex flex-col gap-1.5">
-            <p className="text-texto font-semibold">
-              Você ainda não tem nenhuma trilha.
-            </p>
-            <p className="text-texto-3 max-w-md text-sm leading-relaxed">
-              Responda seis perguntas rápidas e montamos um caminho para o seu
-              objetivo — ou escolha as aulas você mesmo.
-            </p>
-          </div>
+      {/*
+        Diferente das outras telas vazias, aqui NÃO há um gesto a convidar: as
+        trilhas são curadoria da equipe, e o usuário não monta nenhuma. Por
+        isso o texto explica de quem é a vez, e a única ação leva para onde há
+        conteúdo — em vez de sugerir uma tarefa impossível.
+      */}
+      {vazio ? (
+        <EstadoVazio
+          ilustracao={<IlustracaoSemTrilhas />}
+          titulo="Trilhas"
+          descricao="As formações são montadas pela nossa equipe, e nenhuma foi publicada ainda. Assim que a primeira sair, ela aparece aqui."
+        >
           <Link
-            href="/trilhas/nova"
-            className="bg-acento text-white hover:bg-acento-hover flex min-h-11 items-center rounded-full px-5 text-sm font-bold transition-colors"
+            href="/inicio"
+            className="bg-acento text-white hover:bg-acento-hover flex min-h-11 items-center rounded-full px-6 text-sm font-bold transition-colors"
           >
-            Criar minha primeira trilha
+            Explorar o catálogo
           </Link>
-        </div>
+        </EstadoVazio>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {trilhas.map((trilha) => {
-            const capa = trilha.thumbnailDesktopUrl ?? trilha.thumbnailUrl;
+            const capa = capaTrilha(trilha);
 
             return (
-              <li key={trilha.id} className="relative">
-                <AcoesTrilha trilhaId={trilha.id} titulo={trilha.titulo} />
-
+              <li key={trilha.id}>
                 <Link
                   href={`/trilhas/${trilha.id}`}
                   className="border-borda-suave bg-superficie hover:border-acento/60 ease-suave flex h-full flex-col overflow-hidden rounded-xl border transition-[border-color,transform] duration-200 active:scale-[0.99]"
@@ -117,9 +80,11 @@ export default async function PaginaTrilhas() {
                         className="object-cover"
                       />
                     )}
-                    <span className="bg-fundo/85 text-texto-2 absolute right-2 bottom-2 rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums">
-                      {trilha.aulasConcluidas}/{trilha.totalAulas} aulas
-                    </span>
+                    {trilha.nivel && (
+                      <span className="absolute top-2 left-2">
+                        <Selo variacao="neutro">{trilha.nivel}</Selo>
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-1 flex-col gap-3 p-5">
@@ -133,24 +98,10 @@ export default async function PaginaTrilhas() {
                       </p>
                     )}
 
-                    <div className="mt-auto flex flex-col gap-2 pt-1">
-                      <div className="text-texto-3 flex items-center justify-between text-xs tabular-nums">
-                        <span>{trilha.progressoPercent}% concluído</span>
-                        {trilha.tempoRestanteSegundos > 0 && (
-                          <span>
-                            faltam {formatarDuracao(trilha.tempoRestanteSegundos)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="bg-superficie-2 h-1.5 overflow-hidden rounded-full">
-                        <div
-                          className="bg-acento ease-suave h-full rounded-full transition-[width] duration-500"
-                          style={{
-                            width: `${Math.min(Math.max(trilha.progressoPercent, 0), 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
+                    <span className="text-texto-3 mt-auto pt-1 text-xs font-medium tabular-nums">
+                      {trilha.totalConteudos}{" "}
+                      {trilha.totalConteudos === 1 ? "conteúdo" : "conteúdos"}
+                    </span>
                   </div>
                 </Link>
               </li>
