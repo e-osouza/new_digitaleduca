@@ -14,6 +14,7 @@ import { Marca, MarcaIcone } from "@/components/marca";
 import { BotaoSair } from "@/components/botao-sair";
 import { BuscaRapida } from "@/components/busca-rapida";
 import type { GrupoNav } from "@/lib/nav";
+import { Notificacoes } from "@/components/notificacoes";
 
 const CHAVE_RECOLHIDO = "de:menu-recolhido";
 
@@ -189,6 +190,22 @@ const GRUPOS: GrupoNav[] = [
           </>
         ),
       },
+      /*
+       * O app saiu do cabeçalho e virou item de menu. É o único destino daqui
+       * que mora no site institucional, fora da moldura logada — clicar leva
+       * para o layout público, e por isso ele fica no fim da lista, depois de
+       * tudo que é da plataforma.
+       */
+      {
+        href: "/aplicativo",
+        rotulo: "Baixe o app",
+        icone: (
+          <>
+            <rect x="6" y="2.5" width="8" height="15" rx="2" />
+            <path d="M9 15.2h2" />
+          </>
+        ),
+      },
     ],
   },
 ];
@@ -267,7 +284,12 @@ export function AppShell({
         avatar={avatar}
         recolhido={recolhido}
         aoAlternarRecolhido={() => gravarRecolhido(!recolhido)}
-        className={`border-borda-suave bg-cromo ease-saida relative z-30 hidden shrink-0 border-r transition-[width] duration-300 lg:flex ${
+        /*
+          z-40 para ficar ACIMA do cabeçalho (z-30): o botão de recolher mora
+          na borda direita desta barra e avança sobre a faixa do cabeçalho —
+          com a ordem invertida, metade dele sumia por baixo.
+        */
+        className={`border-borda-suave bg-cromo ease-saida relative z-40 hidden shrink-0 border-r transition-[width] duration-300 lg:flex ${
           recolhido ? "w-[4.5rem]" : "w-60 xl:w-64"
         }`}
       />
@@ -302,7 +324,17 @@ export function AppShell({
 
       {/* ---------- área principal ---------- */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-borda-suave bg-cromo/80 flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur-md sm:h-16 sm:gap-3 sm:px-5 lg:px-6">
+        {/*
+          `relative z-30` existe por causa do painel do sino, que escapa da
+          faixa do cabeçalho. O `backdrop-blur` já fazia deste header um
+          contexto de empilhamento próprio, e como o <main> vem depois dele no
+          DOM, o conteúdo da página pintava por cima de qualquer coisa que
+          transbordasse daqui — o painel aparecia cortado na borda de baixo.
+
+          Fica entre os dois vizinhos: acima do conteúdo, abaixo da barra
+          lateral (z-40, pelo botão de recolher) e da gaveta do menu (z-50).
+        */}
+        <header className="border-borda-suave bg-cromo/80 relative z-30 flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur-md sm:h-16 sm:gap-3 sm:px-5 lg:px-6">
           <button
             type="button"
             onClick={() => setGavetaAberta(true)}
@@ -323,8 +355,8 @@ export function AppShell({
 
           {/*
             Só a partir de `lg`: abaixo disso o cabeçalho já tem o botão do
-            menu, a marca, a busca e o atalho do app, e a saudação espremeria
-            todos. Ali o menu lateral não existe, então a esquerda está ocupada.
+            menu, a marca, a busca e o sino, e a saudação espremeria todos.
+            Ali o menu lateral não existe, então a esquerda está ocupada.
           */}
           <p className="text-texto hidden items-center gap-2 truncate text-base font-semibold lg:flex">
             <IconeSaudacao periodo={saudacao.periodo} />
@@ -335,27 +367,7 @@ export function AppShell({
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <BuscaRapida />
 
-            <Link
-              href="/aplicativo"
-              title="Baixe o aplicativo"
-              className="border-borda text-texto-2 hover:border-acento/60 hover:bg-superficie-2 hover:text-texto flex h-11 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition-colors sm:px-4"
-            >
-              <svg
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-                className="h-4 w-4 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="6" y="2.5" width="8" height="15" rx="2" />
-                <path d="M9 15.2h2" />
-              </svg>
-              <span className="hidden sm:inline">Baixe o app</span>
-              <span className="sr-only sm:hidden">Baixe o aplicativo</span>
-            </Link>
+            <Notificacoes />
           </div>
         </header>
 
