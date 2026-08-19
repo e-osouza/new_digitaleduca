@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { mapaDeProgresso, perfilInstrutor } from "@/lib/queries";
-import { ROTULOS_PLURAIS, TIPOS_NA_URL } from "@/lib/nav";
+import { ROTULOS_PLURAIS } from "@/lib/nav";
 import { resumir } from "@/lib/format";
 import { CardConteudo } from "@/components/card-conteudo";
 import { Paginacao } from "@/components/paginacao";
@@ -11,9 +11,15 @@ import type { TipoConteudo } from "@/types/api";
 
 const POR_PAGINA = 12;
 
+/*
+ * As abas do perfil filtram por TIPO, e não por rota — aqui aula e palestra
+ * seguem separadas, porque a pergunta é "o que esta pessoa gravou de cada
+ * coisa". A lista sai dos rótulos, e não do mapa de rotas: `/conteudo` reúne
+ * aula e palestra numa página só, então rota deixou de valer como tipo.
+ */
 const FILTROS: { rotulo: string; valor?: TipoConteudo }[] = [
   { rotulo: "Tudo" },
-  ...Object.values(TIPOS_NA_URL).map((valor) => ({
+  ...(Object.keys(ROTULOS_PLURAIS) as TipoConteudo[]).map((valor) => ({
     rotulo: ROTULOS_PLURAIS[valor],
     valor,
   })),

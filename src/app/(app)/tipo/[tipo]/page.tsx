@@ -1,215 +1,88 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
-  listarCategorias,
   listarConteudos,
-  listarSubcategorias,
   mapaDeProgresso,
   situacaoDosEpisodios,
 } from "@/lib/queries";
-import { ROTULOS_PLURAIS, TIPOS_NA_URL } from "@/lib/nav";
-import { FAIXA } from "@/lib/ui";
-import { CardConteudo } from "@/components/card-conteudo";
+import { DESCRICAO_PODCAST, ROTAS_ANTIGAS } from "@/lib/nav";
 import { PaginaPodcast } from "@/components/podcast/pagina";
 import { separarTitulo } from "@/lib/podcast";
 import { capaVertical, duracaoTotal } from "@/lib/format";
-import { FiltrosBusca } from "@/components/filtros-busca";
-import { Paginacao } from "@/components/paginacao";
 
-/** 12 = três linhas cheias na grade de 4 colunas do desktop. */
-const POR_PAGINA = 12;
+export const metadata: Metadata = { title: "Podcasts" };
 
-const DESCRICOES: Record<string, string> = {
-  AULA: "Cursos e super aulas para aplicar no dia a dia do negócio.",
-  PALESTRA: "Replays e apresentações de quem já escalou empresas.",
-  PODCAST: "Conversas com especialistas, para ouvir enquanto você faz outra coisa.",
-};
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ tipo: string }>;
-}): Promise<Metadata> {
-  const { tipo } = await params;
-  const chave = TIPOS_NA_URL[tipo];
-  return { title: chave ? ROTULOS_PLURAIS[chave] : "Conteúdos" };
-}
-
+/**
+ * Tela do podcast, em `/tipo/podcast`.
+ *
+ * Este segmento já reuniu todas as listagens por tipo. Aula e palestra saíram
+ * para `/conteudo`, e aqui ficou o que nunca foi uma listagem: um reprodutor
+ * com playlist, sem cabeçalho, filtros ou paginação — nada disso serve a um
+ * feed de episódios de ~20 min que se ouve em sequência.
+ *
+ * Continua dinâmico só porque as rotas antigas (`/tipo/aula`,
+ * `/tipo/palestra`, `/tipo/conteudo`) precisam ser atendidas para
+ * redirecionar — links já compartilhados e favoritos passam por aqui.
+ */
 export default async function PaginaTipo({
   params,
   searchParams,
 }: {
   params: Promise<{ tipo: string }>;
   searchParams: Promise<{
-    pagina?: string;
-    categoriaId?: string;
-    subcategoriaId?: string;
     /** Episódio que deve abrir tocando — ver `rotaDoEpisodio`. */
     episodio?: string;
   }>;
 }) {
-  const [{ tipo }, { pagina, categoriaId, subcategoriaId, episodio }] =
-    await Promise.all([params, searchParams]);
+  const [{ tipo }, { episodio }] = await Promise.all([params, searchParams]);
 
-  const chave = TIPOS_NA_URL[tipo];
-  if (!chave) notFound();
-
-  const paginaAtual = Math.max(1, Number(pagina) || 1);
-  const categoria = Number(categoriaId) || undefined;
-  const subcategoria = Number(subcategoriaId) || undefined;
-  const comFiltro = Boolean(categoria || subcategoria);
+  if (ROTAS_ANTIGAS.includes(tipo)) redirect("/conteudo");
+  if (tipo !== "podcast") notFound();
 
   /*
-   * `/conteudos/categorias?tipo=` devolve só as categorias que têm conteúdo
-   * daquele tipo — é o que faz os filtros serem relevantes para cada página.
+   * A playlist recebe o acervo INTEIRO: quem está ouvindo passa de um episódio
+   * ao seguinte, e paginar isso cortaria a fila no meio.
    */
-  const [opcoesCategoria, subcategorias, acervo, progresso] = await Promise.all([
-    listarCategorias(chave),
-    listarSubcategorias(),
-    // O acervo por tipo cabe numa página só (o maior tem 57 itens) e a
-    // resposta é cacheada, então filtramos e paginamos aqui mesmo.
-    listarConteudos({ tipo: chave, limit: 200 }),
+  const [acervo, progresso] = await Promise.all([
+    listarConteudos({ tipo: "PODCAST", limit: 200 }),
     mapaDeProgresso(),
   ]);
 
   /*
-   * O filtro é aplicado sobre a própria listagem: cada conteúdo já traz
-   * `categoriaId` e `subcategoriaId`. Usar `/conteudos/search` traria um
-   * recorte sem `videos`, e o card perderia a duração.
+   * A situação de cada episódio (inclusive os TERMINADOS) não existe em lote —
+   * ver `situacaoDosEpisodios`. Só é buscada aqui, na tela que a usa.
    */
-  const filtrados = acervo.data.filter((conteudo) => {
-    if (categoria && conteudo.categoriaId !== categoria) return false;
-    if (subcategoria && conteudo.subcategoriaId !== subcategoria) return false;
-    return true;
-  });
-
-  const total = filtrados.length;
-  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  // Trocar de filtro pode deixar a página atual além do fim da nova lista.
-  const paginaValida = Math.min(paginaAtual, totalPaginas);
-  const itens = filtrados.slice(
-    (paginaValida - 1) * POR_PAGINA,
-    paginaValida * POR_PAGINA,
-  );
-
-  const categoriasDoTipo = (opcoesCategoria?.data ?? []).map((c) => ({
-    id: c.id,
-    nome: c.nome,
-  }));
-
-  // Só as subcategorias das categorias que aparecem nesta página.
-  const idsCategorias = new Set(categoriasDoTipo.map((c) => c.id));
-  const subcategoriasDoTipo = (subcategorias ?? []).filter(
-    (s) => s.categoriaId === undefined || idsCategorias.has(s.categoriaId),
-  );
-
-  /*
-   * Podcast não é uma listagem: é um player com playlist. A tela inteira muda,
-   * então ela sai daqui antes do cabeçalho, dos filtros e da paginação — nada
-   * disso serve a um feed de episódios de ~20 min que se ouve em sequência.
-   *
-   * A playlist recebe o acervo INTEIRO, e não a página de 12: quem está
-   * ouvindo passa de um episódio ao seguinte, e paginar isso cortaria a fila
-   * no meio.
-   */
-  if (chave === "PODCAST") {
-    /*
-     * A situação de cada episódio (inclusive os TERMINADOS) não existe em
-     * lote — ver `situacaoDosEpisodios`. Só é buscada aqui, na tela que a usa.
-     */
-    const situacao = await situacaoDosEpisodios(filtrados.map((c) => c.id));
-
-    return (
-      <PaginaPodcast
-        descricao={DESCRICOES.PODCAST}
-        episodioInicial={Number(episodio) || null}
-        episodios={filtrados.map((conteudo) => {
-          const { convidado, tema } = separarTitulo(conteudo.titulo);
-          const dele = situacao.get(conteudo.id);
-
-          return {
-            conteudoId: conteudo.id,
-            convidado,
-            tema,
-            capa: capaVertical(conteudo),
-            duracao: duracaoTotal(conteudo),
-            publicadoEm: conteudo.dataCriacao,
-            descricao: conteudo.descricao,
-            instrutores: (conteudo.instrutores ?? [])
-              .map((i) => i.instrutor?.nome)
-              .filter((nome): nome is string => Boolean(nome)),
-            categoria: conteudo.categoria?.nome ?? null,
-            /*
-             * `mapaDeProgresso` é o resguardo: ele cobre o que está em
-             * andamento mesmo quando o detalhe do episódio falha ou fica
-             * além do teto de chamadas.
-             */
-            percentual: dele?.percentual ?? progresso.get(conteudo.id) ?? 0,
-            concluido: dele?.concluido ?? false,
-          };
-        })}
-      />
-    );
-  }
+  const situacao = await situacaoDosEpisodios(acervo.data.map((c) => c.id));
 
   return (
-    <div className={`${FAIXA} flex flex-col gap-6 py-8 sm:gap-8 sm:py-10`}>
-      <header className="flex flex-col gap-1.5 sm:gap-2">
-        <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
-          {ROTULOS_PLURAIS[chave]}
-        </h1>
-        <p className="text-texto-3 text-sm">
-          {DESCRICOES[chave]}
-          {total > 0 && (
-            <span className="tabular-nums">
-              {" "}
-              · {total} {comFiltro ? "nesta seleção" : "no acervo"}
-            </span>
-          )}
-        </p>
-      </header>
+    <PaginaPodcast
+      descricao={DESCRICAO_PODCAST}
+      episodioInicial={Number(episodio) || null}
+      episodios={acervo.data.map((conteudo) => {
+        const { convidado, tema } = separarTitulo(conteudo.titulo);
+        const dele = situacao.get(conteudo.id);
 
-      {categoriasDoTipo.length > 0 && (
-        <FiltrosBusca
-          base={`/tipo/${tipo}`}
-          preservarTipo={false}
-          categorias={categoriasDoTipo}
-          subcategorias={subcategoriasDoTipo}
-          categoriaAtual={categoria}
-          subcategoriaAtual={subcategoria}
-        />
-      )}
-
-      {itens.length === 0 ? (
-        <p className="text-texto-3 text-sm">
-          {comFiltro
-            ? "Nenhum conteúdo nesta combinação de filtros."
-            : "Nenhum conteúdo publicado nesta categoria ainda."}
-        </p>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-            {itens.map((conteudo) => (
-              <CardConteudo
-                key={conteudo.id}
-                conteudo={conteudo}
-                largura="w-full"
-                progresso={progresso.get(conteudo.id)}
-              />
-            ))}
-          </div>
-
-          <Paginacao
-            base={`/tipo/${tipo}`}
-            pagina={paginaValida}
-            totalPaginas={totalPaginas}
-            parametros={{
-              categoriaId: categoria ? String(categoria) : undefined,
-              subcategoriaId: subcategoria ? String(subcategoria) : undefined,
-            }}
-          />
-        </>
-      )}
-    </div>
+        return {
+          conteudoId: conteudo.id,
+          convidado,
+          tema,
+          capa: capaVertical(conteudo),
+          duracao: duracaoTotal(conteudo),
+          publicadoEm: conteudo.dataCriacao,
+          descricao: conteudo.descricao,
+          instrutores: (conteudo.instrutores ?? [])
+            .map((i) => i.instrutor?.nome)
+            .filter((nome): nome is string => Boolean(nome)),
+          categoria: conteudo.categoria?.nome ?? null,
+          /*
+           * `mapaDeProgresso` é o resguardo: ele cobre o que está em andamento
+           * mesmo quando o detalhe do episódio falha ou fica além do teto de
+           * chamadas.
+           */
+          percentual: dele?.percentual ?? progresso.get(conteudo.id) ?? 0,
+          concluido: dele?.concluido ?? false,
+        };
+      })}
+    />
   );
 }

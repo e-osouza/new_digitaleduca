@@ -159,7 +159,7 @@ export async function Catalogo() {
         <Trilho
           titulo="Aulas"
           descricao="Cursos e super aulas para aplicar no dia a dia"
-          verMais={{ href: "/tipo/aula", rotulo: "Ver todas" }}
+          verMais={{ href: "/conteudo", rotulo: "Ver todas" }}
         >
           {aulas.data.map((conteudo) => (
             <CardConteudo
@@ -175,7 +175,7 @@ export async function Catalogo() {
         <Trilho
           titulo="Palestras"
           descricao="Replays de quem já escalou empresas"
-          verMais={{ href: "/tipo/palestra", rotulo: "Ver todas" }}
+          verMais={{ href: "/conteudo", rotulo: "Ver todas" }}
         >
           {palestras.data.map((conteudo) => (
             <CardConteudo

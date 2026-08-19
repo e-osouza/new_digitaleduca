@@ -71,35 +71,20 @@ const GRUPOS: GrupoNav[] = [
     ],
   },
   {
-    titulo: "Conteúdos",
+    titulo: "Para você",
     itens: [
+      /*
+       * Aula e palestra numa entrada só: as duas se assistem do mesmo jeito, e
+       * separá-las obrigava a escolher a lista antes de saber onde estava o
+       * que se procura. O selo no card continua dizendo qual é qual.
+       */
       {
-        href: "/tipo/aula",
-        rotulo: "Aulas",
+        href: "/conteudo",
+        rotulo: "Conteúdo",
         icone: (
           <>
             <path d="M10 4 3 7.5 10 11l7-3.5L10 4Z" />
             <path d="M6 9.5V14c0 1.1 1.8 2 4 2s4-.9 4-2V9.5" />
-          </>
-        ),
-      },
-      {
-        href: "/tipo/palestra",
-        rotulo: "Palestras",
-        icone: (
-          <>
-            <rect x="3" y="4" width="14" height="9" rx="1.5" />
-            <path d="M7 16.5h6M10 13v3.5" />
-          </>
-        ),
-      },
-      {
-        href: "/tipo/podcast",
-        rotulo: "Podcasts",
-        icone: (
-          <>
-            <rect x="7.5" y="2.5" width="5" height="9" rx="2.5" />
-            <path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5" />
           </>
         ),
       },
@@ -111,6 +96,16 @@ const GRUPOS: GrupoNav[] = [
             <circle cx="5" cy="5" r="2" />
             <circle cx="15" cy="15" r="2" />
             <path d="M7 5h4a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h4" />
+          </>
+        ),
+      },
+      {
+        href: "/tipo/podcast",
+        rotulo: "Podcasts",
+        icone: (
+          <>
+            <rect x="7.5" y="2.5" width="5" height="9" rx="2.5" />
+            <path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5" />
           </>
         ),
       },
