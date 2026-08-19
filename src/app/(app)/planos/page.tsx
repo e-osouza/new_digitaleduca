@@ -4,6 +4,7 @@ import { listarPlanos, normalizarMe, obterMe } from "@/lib/queries";
 import { formatarPreco } from "@/lib/format";
 import { FAIXA } from "@/lib/ui";
 import { Selo } from "@/components/selo";
+import { CheckoutAssinatura } from "@/components/checkout-assinatura";
 
 export const metadata: Metadata = { title: "Planos" };
 
@@ -173,18 +174,18 @@ export default async function PaginaPlanos({
                   ))}
                 </ul>
 
-                <a
-                  href="https://digitaleduca.com.vc/#planos"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-auto flex min-h-12 items-center justify-center rounded-full px-6 text-sm font-bold transition-colors ${
-                    destaque
-                      ? "bg-acento text-white hover:bg-acento-hover"
-                      : "border-borda text-texto hover:border-acento/60 hover:bg-superficie border"
-                  }`}
-                >
-                  Assinar
-                </a>
+                {temAssinaturaAtiva || ehCortesia ? (
+                  <p className="text-texto-3 mt-auto text-sm">
+                    {ehCortesia
+                      ? "Seu acesso de cortesia já cobre tudo isto."
+                      : "Você já assina a plataforma."}
+                  </p>
+                ) : (
+                  <CheckoutAssinatura
+                    plano={plano}
+                    destinoAposAssinar={veioDeBloqueio ? destinoVolta : undefined}
+                  />
+                )}
               </li>
             );
           })}
@@ -192,13 +193,14 @@ export default async function PaginaPlanos({
       )}
 
       {/*
-        O checkout ainda não vive aqui: a API tem campos de Stripe nos planos,
-        mas `POST /assinatura` espera cardToken do Mercado Pago. Enquanto o
-        gateway não for definido, a contratação segue pelo site institucional.
+        O gateway é o Mercado Pago, por Checkout Transparente: `POST
+        /assinatura` exige `cardToken`, que só existe tokenizando o cartão no
+        navegador. Os campos de Stripe que sobraram nos planos (`priceId`,
+        `stripeProductId`) são de uma integração anterior e não são usados.
       */}
       <p className="text-texto-3 text-sm">
-        A contratação é concluída no site oficial. Assim que a assinatura for
-        confirmada, o acesso libera automaticamente aqui.
+        Pagamento processado pelo Mercado Pago. Os dados do cartão não passam
+        pelos servidores da Digital Educa.
       </p>
     </div>
   );
