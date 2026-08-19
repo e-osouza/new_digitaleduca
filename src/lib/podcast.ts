@@ -1,3 +1,5 @@
+import type { ConteudoInstrutor } from "@/types/api";
+
 /**
  * Separa "Convidado — Tema" nas duas partes.
  *
@@ -39,4 +41,53 @@ export const PARAM_EPISODIO = "episodio";
  */
 export function rotaDoEpisodio(conteudoId: number) {
   return `/tipo/podcast?${PARAM_EPISODIO}=${conteudoId}`;
+}
+
+/**
+ * Quem apresenta e quem participa de um episódio.
+ *
+ * As duas origens convivem porque o modelo mudou em 19/08/2026. O apresentador
+ * hoje é texto puro em `conteudos.apresentador` — vários nomes separados por
+ * vírgula —, e é ele que manda. Cadastros anteriores gravaram o apresentador
+ * como um vínculo de `papel: "APRESENTADOR"`, que serve de recurso final
+ * enquanto esses episódios não forem reeditados.
+ *
+ * Os convidados continuam sendo vínculos: são pessoas do acervo, com perfil
+ * público. Quem vier sem papel, ou como `INSTRUTOR`, entra como participante —
+ * num podcast a apresentação é o papel declarado, o resto é quem foi conversar.
+ *
+ * Nomes repetidos caem fora: o episódio 44 tem Rafael Liporace nas duas
+ * origens, e sem isso ele apareceria duas vezes.
+ */
+export function pessoasDoEpisodio(conteudo: {
+  apresentador?: string | null;
+  instrutores?: ConteudoInstrutor[];
+}) {
+  const doVinculo: string[] = [];
+  const participantes: string[] = [];
+  const vistos = new Set<number>();
+
+  for (const vinculo of conteudo.instrutores ?? []) {
+    const pessoa = vinculo?.instrutor;
+    if (!pessoa?.nome || vistos.has(pessoa.id)) continue;
+    vistos.add(pessoa.id);
+
+    (vinculo.papel === "APRESENTADOR" ? doVinculo : participantes).push(
+      pessoa.nome.trim(),
+    );
+  }
+
+  const doTexto = (conteudo.apresentador ?? "")
+    .split(",")
+    .map((nome) => nome.trim())
+    .filter(Boolean);
+
+  const apresentadores = doTexto.length > 0 ? doTexto : doVinculo;
+  const chave = (nome: string) => nome.toLocaleLowerCase("pt-BR");
+  const jaApresenta = new Set(apresentadores.map(chave));
+
+  return {
+    apresentadores,
+    participantes: participantes.filter((nome) => !jaApresenta.has(chave(nome))),
+  };
 }

@@ -7,7 +7,7 @@ import {
 } from "@/lib/queries";
 import { DESCRICAO_PODCAST, ROTAS_ANTIGAS } from "@/lib/nav";
 import { PaginaPodcast } from "@/components/podcast/pagina";
-import { separarTitulo } from "@/lib/podcast";
+import { pessoasDoEpisodio, separarTitulo } from "@/lib/podcast";
 import { capaVertical, duracaoTotal } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Podcasts" };
@@ -70,9 +70,12 @@ export default async function PaginaTipo({
           duracao: duracaoTotal(conteudo),
           publicadoEm: conteudo.dataCriacao,
           descricao: conteudo.descricao,
-          instrutores: (conteudo.instrutores ?? [])
-            .map((i) => i.instrutor?.nome)
-            .filter((nome): nome is string => Boolean(nome)),
+          /*
+           * Apresentador e convidados saem do cadastro, e não do título: o
+           * título é texto de vitrine e, quando ele traz um nome, é tão
+           * frequentemente o do apresentador quanto o do convidado.
+           */
+          ...pessoasDoEpisodio(conteudo),
           categoria: conteudo.categoria?.nome ?? null,
           /*
            * `mapaDeProgresso` é o resguardo: ele cobre o que está em andamento

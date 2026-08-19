@@ -121,6 +121,16 @@ export interface Conteudo {
   videos: Video[];
   modulos: Modulo[];
   instrutores: ConteudoInstrutor[];
+  /**
+   * Quem apresenta o episódio, em `conteudos.apresentador` — texto puro, com
+   * os nomes separados por vírgula quando são mais de um.
+   *
+   * Não é um vínculo com Instrutor desde 19/08/2026: apresentador virado
+   * registro de instrutor entrava na vitrine pública com a formação em branco.
+   * Cadastros anteriores a essa data ainda têm o vínculo `APRESENTADOR`, então
+   * as duas origens convivem — ver `pessoasDoEpisodio`.
+   */
+  apresentador?: string | null;
   categoria?: Categoria;
   subcategoria?: Subcategoria;
   /** Presentes na resposta real, ausentes na spec. */

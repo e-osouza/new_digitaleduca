@@ -82,6 +82,16 @@ export function PaginaPodcast({
   const emFoco = r.episodio ?? episodios[0] ?? null;
 
   /*
+   * A linha de pessoas sob o título prioriza os convidados: num podcast é o
+   * convidado que puxa o clique, e o apresentador é o mesmo em quase toda a
+   * série. Episódio sem convidado cadastrado mostra quem apresenta; sem
+   * nenhum vínculo, sai vazia e o título assume.
+   */
+  const pessoasEmFoco = (
+    emFoco?.participantes.length ? emFoco.participantes : (emFoco?.apresentadores ?? [])
+  ).join(", ");
+
+  /*
    * Posição do <Player> de vídeo, gravada em ref porque chega a cada
    * `timeupdate` — em estado, seriam quatro renders por segundo da tela toda.
    * É ela que devolve o ponto ao áudio na volta.
@@ -256,8 +266,19 @@ export function PaginaPodcast({
                 {emFoco.tema ?? emFoco.convidado}
               </h1>
 
-              {emFoco.tema && (
-                <p className="text-texto-2 font-medium">{emFoco.convidado}</p>
+              {/*
+                Quem está na conversa, direto do cadastro. Antes esta linha
+                repetia o pedaço do título antes do travessão — o que dava o
+                nome certo na maioria dos episódios e o do apresentador nos
+                que têm convidado. O título continua valendo como recurso
+                final, para o episódio cadastrado sem nenhum vínculo.
+              */}
+              {pessoasEmFoco ? (
+                <p className="text-texto-2 font-medium">{pessoasEmFoco}</p>
+              ) : (
+                emFoco.tema && (
+                  <p className="text-texto-2 font-medium">{emFoco.convidado}</p>
+                )
               )}
 
               <div className="text-texto-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm tabular-nums">
@@ -390,7 +411,7 @@ export function PaginaPodcast({
           <h2 className="font-display font-semibold">Sobre o episódio</h2>
 
           {emFoco.descricao ? (
-            <p className="text-texto-2 max-w-prose text-sm leading-relaxed">
+            <p className="text-texto-2 w-full text-sm leading-relaxed">
               {emFoco.descricao}
             </p>
           ) : (
@@ -405,13 +426,20 @@ export function PaginaPodcast({
             aguenta as ausências sem deixar buraco.
           */}
           <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-            <Ficha rotulo="Convidado" valor={emFoco.convidado} />
-            {emFoco.instrutores.length > 0 && (
+            {emFoco.apresentadores.length > 0 && (
+              <Ficha
+                rotulo="Apresentado por"
+                valor={emFoco.apresentadores.join(", ")}
+              />
+            )}
+            {emFoco.participantes.length > 0 && (
               <Ficha
                 rotulo={
-                  emFoco.instrutores.length > 1 ? "Apresentam" : "Apresenta"
+                  emFoco.participantes.length > 1
+                    ? "Participantes"
+                    : "Participante"
                 }
-                valor={emFoco.instrutores.join(", ")}
+                valor={emFoco.participantes.join(", ")}
               />
             )}
             {emFoco.categoria && (

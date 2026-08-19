@@ -22,7 +22,10 @@ export type Episodio = {
   duracao: number;
   publicadoEm: string | null;
   descricao: string | null;
-  instrutores: string[];
+  /** Quem apresenta — `papel: "APRESENTADOR"` no vínculo da API. */
+  apresentadores: string[];
+  /** Quem foi conversar — os demais vínculos, `CONVIDADO` à frente. */
+  participantes: string[];
   categoria: string | null;
   /** 0 a 100, já ouvido. */
   percentual: number;
