@@ -11,6 +11,7 @@ import {
 } from "react";
 import type Hls from "hls.js";
 import { resolverFonteVimeo } from "@/lib/fonte-video";
+import loaderDaApi from "@/lib/image-loader";
 
 /** Episódio como a playlist o conhece — sem nada que exija o `findOne`. */
 export type Episodio = {
@@ -461,6 +462,125 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
     const seguinte = fila[indice + 1];
     if (seguinte) abrir(seguinte, fila);
   }, [abrir, episodio, fila]);
+
+  /* ---- ficha na tela de bloqueio e nos fones ---- */
+
+  /*
+   * Media Session: é ela que preenche a notificação do Android, o Centro de
+   * Controle do iOS e a barrinha de mídia do Chrome no desktop.
+   *
+   * Sem isto o sistema mostra o que consegue adivinhar sozinho — o nome da
+   * aba e o ícone do site —, que é por que aparecia "Podcasts · Digital Educa"
+   * com o domínio embaixo e o logotipo no lugar da capa.
+   *
+   * A arte pede URLs ABSOLUTAS: quem desenha a notificação é o sistema
+   * operacional, fora da página, e um caminho relativo não significa nada
+   * para ele. Por isso passamos pelo mesmo loader do next/image, que devolve
+   * o endereço completo no proxy da API. Vários tamanhos porque cada
+   * superfície escolhe o seu — a tela de bloqueio quer 512, a notificação
+   * compacta se contenta com 96.
+   */
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+
+    if (!episodio) {
+      navigator.mediaSession.metadata = null;
+      return;
+    }
+
+    const pessoas = [...episodio.participantes, ...episodio.apresentadores];
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      // O tema é o título do episódio; sem tema, o próprio nome do convidado.
+      title: episodio.tema ?? episodio.convidado,
+      // Quem está na conversa — é a linha que o sistema mostra como "artista".
+      artist: pessoas.length > 0 ? pessoas.join(", ") : episodio.convidado,
+      album: "Podcasts · Digital Educa",
+      artwork: episodio.capa
+        ? [96, 128, 192, 256, 384, 512].map((px) => ({
+            src: loaderDaApi({ src: episodio.capa as string, width: px, quality: 80 }),
+            sizes: `${px}x${px}`,
+            type: "image/webp",
+          }))
+        : [],
+    });
+  }, [episodio]);
+
+  /*
+   * Os botões da notificação. Sem `setActionHandler` o sistema oferece só
+   * play/pause; com eles aparecem avançar 15s, voltar 15s, próximo episódio e
+   * — onde houver — o arrastar da barra.
+   */
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const ms = navigator.mediaSession;
+
+    const acoes: [MediaSessionAction, MediaSessionActionHandler][] = [
+      ["play", () => videoRef.current?.play().catch(() => setTocando(false))],
+      ["pause", () => videoRef.current?.pause()],
+      ["nexttrack", () => proximo()],
+      ["seekbackward", (d) => pular(-(d.seekOffset ?? 15))],
+      ["seekforward", (d) => pular(d.seekOffset ?? 15)],
+      ["seekto", (d) => { if (typeof d.seekTime === "number") irPara(d.seekTime); }],
+    ];
+
+    for (const [acao, mao] of acoes) {
+      // Nem todo navegador conhece todas as ações; a desconhecida lança.
+      try {
+        ms.setActionHandler(acao, mao);
+      } catch {
+        /* ação não suportada aqui */
+      }
+    }
+
+    return () => {
+      for (const [acao] of acoes) {
+        try {
+          ms.setActionHandler(acao, null);
+        } catch {
+          /* idem */
+        }
+      }
+    };
+  }, [proximo, pular, irPara]);
+
+  /*
+   * Posição e velocidade.
+   *
+   * O navegador estima sozinho a régua da notificação a partir do elemento,
+   * mas a estimativa assume 1×. Como o player oferece até 2×, sem informar a
+   * taxa a barra do sistema anda mais devagar que o áudio e vai descolando.
+   *
+   * Não é chamado a cada `timeupdate` — quatro vezes por segundo seria ruído.
+   * Só quando muda algo que a estimativa não consegue acompanhar: a duração,
+   * a velocidade, ou um salto na posição.
+   */
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    if (!navigator.mediaSession.setPositionState) return;
+    const video = videoRef.current;
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
+
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: video.duration,
+        playbackRate: video.playbackRate,
+        position: Math.min(video.currentTime, video.duration),
+      });
+    } catch {
+      /* posição inválida durante uma troca de faixa — o próximo passe corrige */
+    }
+  }, [duracao, velocidade, episodio, tocando]);
+
+  /* O ícone de play/pause do sistema precisa concordar com o nosso estado. */
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = !episodio
+      ? "none"
+      : tocando
+        ? "playing"
+        : "paused";
+  }, [episodio, tocando]);
 
   const fechar = useCallback(() => {
     const video = videoRef.current;
