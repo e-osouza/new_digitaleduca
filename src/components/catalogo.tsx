@@ -125,10 +125,15 @@ export async function Catalogo() {
           titulo="Continue de onde parou"
           verMais={{ href: "/meus-conteudos", rotulo: "Ver tudo" }}
         >
-          {continuar.map((item) => (
+          {continuar.map((item, indice) => (
             <CardConteudo
               key={item.conteudoId}
               conteudo={paraCard(item)}
+              /*
+               * Os dois primeiros abrem a tela logo abaixo do herói e são
+               * candidatos a LCP — ver `prioritaria` em CardConteudo.
+               */
+              prioritaria={indice < 2}
               progresso={item.percentualAssistido}
               duracaoSegundos={item.duracao}
               /*
@@ -150,10 +155,15 @@ export async function Catalogo() {
 
       {outrosDestaques.length > 0 && (
         <Trilho titulo="Em destaque" descricao="Selecionados pela curadoria">
-          {outrosDestaques.map((conteudo) => (
+          {outrosDestaques.map((conteudo, indice) => (
             <CardConteudo
               key={conteudo.id}
               conteudo={conteudo}
+              /*
+               * Para quem ainda não assistiu nada, "Continue de onde parou"
+               * não existe e este é o primeiro trilho da página.
+               */
+              prioritaria={continuar.length === 0 && indice < 2}
               progresso={progresso.get(conteudo.id)}
             />
           ))}

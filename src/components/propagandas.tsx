@@ -147,7 +147,16 @@ export function Propagandas({ itens }: { itens: Propaganda[] }) {
                    * chamada — simplesmente não era exibida.
                    */
                   className="h-auto w-full"
-                  priority
+                  /*
+                   * Só o banner que está à vista entra na fila de prioridade.
+                   * Antes TODOS entravam — inclusive o clone, que é uma cópia
+                   * do primeiro: três downloads de alta prioridade disputando
+                   * banda com o herói, sendo que dois deles ninguém vê antes
+                   * de o carrossel girar. Os outros ficam preguiçosos e chegam
+                   * a tempo: o primeiro giro só acontece 6s depois.
+                   */
+                  priority={i === 0}
+                  loading={i === 0 ? "eager" : "lazy"}
                 />
               </a>
             );

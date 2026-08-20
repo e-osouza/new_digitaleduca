@@ -26,6 +26,7 @@ export function CardConteudo({
   href,
   orientacao = "vertical",
   numero,
+  prioritaria = false,
 }: {
   conteudo: ConteudoDeCard;
   /** Duração informada por fora, quando a origem não traz a lista de vídeos. */
@@ -52,6 +53,18 @@ export function CardConteudo({
    * em trilhos ordenados — nas grades comuns a numeração seria arbitrária.
    */
   numero?: number;
+  /**
+   * Tira a capa da fila preguiçosa.
+   *
+   * `next/image` adia toda imagem por padrão, e num catálogo isso é certo em
+   * quase todo lugar — menos no card que o navegador escolhe como LCP. Medido
+   * na home em 4G: o maior elemento da primeira tela era justamente a capa do
+   * primeiro card, marcada `loading="lazy"` e `fetchPriority="auto"`. O
+   * navegador só a pedia depois de calcular o layout, e ela ainda entrava na
+   * fila atrás de tudo. Quem monta a lista sabe quais cards abrem a tela; só
+   * esses recebem isto.
+   */
+  prioritaria?: boolean;
 }) {
   const deitado = orientacao === "horizontal";
   /*
@@ -112,6 +125,15 @@ export function CardConteudo({
                   : "(max-width: 768px) 45vw, (max-width: 1024px) 31vw, 24vw"
               }
               className="ease-suave object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+              /*
+               * 55 em vez dos 75 padrão. A capa do card é servida a 384px e
+               * exibida com ~163px de largura no celular; nessa escala a
+               * diferença não se vê, e as 19 capas da home caem de 307 KB para
+               * 255 KB. O herói e o banner ficam em 75 — ali a arte ocupa a
+               * largura da tela e o artefato apareceria.
+               */
+              quality={55}
+              priority={prioritaria}
             />
           ) : (
             <div className="text-texto-3 flex h-full items-center justify-center text-xs">
