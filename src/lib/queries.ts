@@ -200,6 +200,21 @@ export function listarPlanos() {
 }
 
 /** Propagandas ativas para exibir no app do usuário. */
+/**
+ * Configuração pública da plataforma, controlada pelo painel admin.
+ *
+ * `apiOpcional` de propósito: se a rota cair, a home tem de continuar de pé.
+ * O padrão em caso de falha é mostrar o slide — esconder o topo da home por
+ * causa de um timeout seria uma regressão pior que o inverso.
+ */
+export async function configPublica(): Promise<{ slideDestaqueAtivo: boolean }> {
+  const resposta = await apiOpcional<{ slideDestaqueAtivo: boolean }>(
+    "/app/publico",
+    { revalidar: 60 },
+  );
+  return resposta ?? { slideDestaqueAtivo: true };
+}
+
 export async function listarPropagandas(): Promise<Propaganda[]> {
   const resposta = await apiOpcional<Propaganda[]>("/propagandas", {
     revalidar: 300,

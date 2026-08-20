@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  configPublica,
   listarConteudos,
   listarTodasCategorias,
   listarInstrutores,
@@ -50,6 +51,7 @@ export async function Catalogo() {
      */
     progresso,
     propagandas,
+    config,
   ] = await Promise.all([
     listarConteudos({ destaque: true, limit: 12 }),
     maisAssistidosSemPodcast(10),
@@ -61,6 +63,7 @@ export async function Catalogo() {
     progressoEmAndamento(),
     mapaDeProgresso(),
     listarPropagandas(),
+    configPublica(),
   ]);
 
   const categorias = listaCategorias ?? [];
@@ -70,7 +73,18 @@ export async function Catalogo() {
    * Até 3 destaques viram slides do topo; o restante segue no trilho abaixo,
    * para não repetir os mesmos conteúdos nas duas áreas.
    */
-  const paraSlide = (destaques.data.length > 0 ? destaques.data : maisAssistidos)
+  const paraSlide = (
+    /*
+     * A chave do painel admin (`slideDestaqueAtivo`) é a única forma de tirar
+     * o carrossel do ar: sem ela, uma lista de destaques vazia apenas faz o
+     * slide cair para os mais assistidos, e ele continua no topo.
+     */
+    !config.slideDestaqueAtivo
+      ? []
+      : destaques.data.length > 0
+        ? destaques.data
+        : maisAssistidos
+  )
     .slice(0, 3)
     .map((conteudo) => {
       const segundos = duracaoTotal(conteudo);
