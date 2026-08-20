@@ -92,7 +92,17 @@ export function Propagandas({ itens }: { itens: Propaganda[] }) {
      * acabou herdando esse comportamento sem ser um herói: aqui a arte mora
      * dentro de um cartão arredondado, que precisa da borda para existir.
      */
-    <section aria-label="Destaques" className="calha flex w-full flex-col gap-2">
+    <section
+      aria-label="Destaques"
+      /*
+       * A margem do topo é a MESMA medida da calha lateral — `--calha`, que
+       * a própria classe `calha` define e que muda por faixa (1,25rem no
+       * celular, 2rem no tablet, 2,5rem no desktop). Amarrar na variável, em
+       * vez de escrever os três valores, mantém o respiro igual em volta do
+       * cartão: se a calha da plataforma mudar um dia, esta margem acompanha.
+       */
+      className="calha mt-[var(--calha)] flex w-full flex-col gap-2"
+    >
       <div className="border-borda-suave bg-superficie-2 relative overflow-hidden rounded-2xl border">
         <div
           className={`flex ${

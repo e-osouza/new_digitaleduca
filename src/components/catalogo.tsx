@@ -108,9 +108,17 @@ export async function Catalogo() {
 
   return (
     <div className="flex flex-col gap-10 pb-8 sm:gap-14">
-      <HeroiSlide slides={paraSlide} />
-
-      <Propagandas itens={propagandas} />
+      {/*
+        Herói e banner ficam num grupo SEM gap — juntos eles contam como um
+        filho só do empilhamento acima. O respiro entre os dois é a margem que
+        o próprio banner carrega (`--calha`, a mesma medida da calha lateral),
+        e não o gap-14 da home: os dois somados davam 96px, o dobro do que
+        separa qualquer outro par de blocos daqui para baixo.
+      */}
+      <div className="flex flex-col">
+        <HeroiSlide slides={paraSlide} />
+        <Propagandas itens={propagandas} />
+      </div>
 
       {continuar.length > 0 && (
         <Trilho
