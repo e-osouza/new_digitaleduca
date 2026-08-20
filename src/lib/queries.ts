@@ -348,25 +348,52 @@ export type SituacaoEpisodio = {
 /**
  * Quanto o usuário já ouviu de cada episódio, incluindo os TERMINADOS.
  *
- * Existe porque nenhuma fonte em lote serve a esse dado. `em-andamento` (que
- * alimenta `mapaDeProgresso`) só devolve o que está abaixo de 100%, então
- * dentro dele "concluído" e "nunca ouvido" são a mesma ausência — impossível
- * marcar um episódio como ouvido. `ProgressoVideo`, com a bandeira `concluido`,
- * só vem no detalhe de cada conteúdo.
+ * `em-andamento` (que alimenta `mapaDeProgresso`) só devolve o que está abaixo
+ * de 100%, então dentro dele "concluído" e "nunca ouvido" são a mesma ausência
+ * — impossível marcar um episódio como ouvido.
  *
- * Daí o leque de chamadas, uma por episódio. Elas saem em paralelo, então a
- * espera é a de uma só, e cada falha vira ausência em vez de derrubar a
- * página. Ainda assim é uma chamada por episódio, e por isso o teto abaixo: o
- * acervo tem 18 podcasts hoje, mas o custo cresce com ele.
- *
- * Um endpoint que devolvesse os conteúdos concluídos do usuário — ou
- * `ProgressoVideo` na própria listagem — apagaria esta função inteira.
+ * A fonte certa é `GET /progresso-video/situacao`, que resolve isso numa
+ * chamada. Abaixo dele sobrevive o caminho antigo: pedir o detalhe de CADA
+ * episódio só para ler a bandeira `concluido`. Eram 18 chamadas por abertura
+ * da tela do podcast, com teto de 40 — em paralelo, então a espera era a de
+ * uma só, mas o servidor levava 18. Some quando o endpoint estiver publicado
+ * em todos os ambientes.
  */
 const TETO_DETALHES = 40;
+
+/**
+ * `GET /progresso-video/situacao` — uma chamada com a situação de tudo que a
+ * pessoa já tocou, concluídos inclusive.
+ *
+ * Endpoint novo. Enquanto não estiver publicado ele responde 404, e o
+ * `apiOpcional` devolve null — daí a queda para o caminho antigo abaixo. Vale
+ * apagar a queda depois que o backend subir.
+ */
+async function situacaoEmLote(): Promise<Map<number, SituacaoEpisodio> | null> {
+  const resposta = await apiOpcional<{
+    data: { conteudoId: number; percentual: number; concluido: boolean }[];
+  }>("/progresso-video/situacao", { autenticado: true, revalidar: false });
+
+  if (!resposta?.data) return null;
+
+  return new Map(
+    resposta.data.map((item) => [
+      item.conteudoId,
+      { percentual: item.percentual, concluido: item.concluido },
+    ]),
+  );
+}
 
 export async function situacaoDosEpisodios(
   ids: number[],
 ): Promise<Map<number, SituacaoEpisodio>> {
+  /*
+   * Caminho novo: uma chamada só. O leque abaixo é o antigo — mantido
+   * enquanto o endpoint não está publicado em todos os ambientes.
+   */
+  const emLote = await situacaoEmLote();
+  if (emLote) return emLote;
+
   const consultados = ids.slice(0, TETO_DETALHES);
 
   const respostas = await Promise.all(
