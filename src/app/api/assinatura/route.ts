@@ -25,6 +25,11 @@ export async function POST(request: Request) {
     cardToken?: unknown;
     installments?: unknown;
     payerDoc?: unknown;
+    cardBrand?: unknown;
+    cardLast4?: unknown;
+    cardExpMonth?: unknown;
+    cardExpYear?: unknown;
+    cartaoNome?: unknown;
   };
   try {
     corpo = await request.json();
@@ -46,10 +51,14 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  /* O backend só exige o CPF no parcelado, mas a checagem é barata dos dois lados. */
-  if (parcelas > 1 && cpf.length !== 11) {
+  /*
+   * O backend só EXIGE o CPF no parcelado, mas repassa `payerDoc` ao Mercado
+   * Pago nos dois caminhos, e no Brasil o MP costuma recusar cartão sem a
+   * identificação do pagador. Exigimos sempre.
+   */
+  if (cpf.length !== 11) {
     return NextResponse.json(
-      { erro: "Informe o CPF do titular para parcelar." },
+      { erro: "Informe o CPF do titular." },
       { status: 400 },
     );
   }
@@ -64,8 +73,33 @@ export async function POST(request: Request) {
     cardToken,
     metodoPagamento: "CARTAO",
     installments: parcelas,
+    payerDoc: cpf,
   };
-  if (parcelas > 1) payload.payerDoc = cpf;
+
+  /*
+   * Metadados do cartão, quando o Mercado Pago os devolveu na tokenização.
+   * Não são sigilosos — são os mesmos dados impressos na fatura — e a API os
+   * grava na assinatura. Sem eles o painel mostra a linha do cartão vazia.
+   */
+  const texto2 = (v: unknown) => {
+    const s = String(v ?? "").trim();
+    return s || undefined;
+  };
+  const numero = (v: unknown) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+
+  const metadados = {
+    cardBrand: texto2(corpo.cardBrand),
+    cardLast4: texto2(corpo.cardLast4)?.slice(-4),
+    cardExpMonth: numero(corpo.cardExpMonth),
+    cardExpYear: numero(corpo.cardExpYear),
+    cartaoNome: texto2(corpo.cartaoNome),
+  };
+  for (const [chave, valor] of Object.entries(metadados)) {
+    if (valor !== undefined) payload[chave] = valor;
+  }
 
   const resposta = await fetch(`${API_URL}/assinatura`, {
     method: "POST",

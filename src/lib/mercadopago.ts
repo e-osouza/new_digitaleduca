@@ -38,6 +38,15 @@ type CampoSeguro = {
   on: (evento: string, ouvinte: (dados: unknown) => void) => void;
 };
 
+type RespostaToken = {
+  id: string;
+  first_six_digits?: string;
+  last_four_digits?: string;
+  expiration_month?: number;
+  expiration_year?: number;
+  cardholder?: { name?: string };
+};
+
 type Mp = {
   fields: {
     create: (tipo: string, opcoes?: Record<string, unknown>) => CampoSeguro;
@@ -45,9 +54,29 @@ type Mp = {
       cardholderName: string;
       identificationType?: string;
       identificationNumber?: string;
-    }) => Promise<{ id: string }>;
+    }) => Promise<RespostaToken>;
   };
   getIdentificationTypes: () => Promise<unknown>;
+  getPaymentMethods: (dados: { bin: string }) => Promise<{
+    results?: { id?: string }[];
+  }>;
+};
+
+/**
+ * O que a API precisa saber do cartão além do token.
+ *
+ * Nada aqui é sigiloso — são os mesmos dados que o banco imprime na fatura, e
+ * o próprio Mercado Pago devolve na tokenização. A API grava tudo na
+ * assinatura, e é o que faz o painel mostrar "Mastercard •••• 6351" em vez de
+ * uma linha vazia.
+ */
+export type DadosDoCartao = {
+  cardToken: string;
+  cardBrand?: string;
+  cardLast4?: string;
+  cardExpMonth?: number;
+  cardExpYear?: number;
+  cartaoNome?: string;
 };
 
 declare global {
@@ -186,7 +215,7 @@ export function montarCampos(
 export async function gerarTokenDoCartao(
   mp: Mp,
   dados: { titular: string; cpf?: string },
-): Promise<string> {
+): Promise<DadosDoCartao> {
   const cpf = (dados.cpf ?? "").replace(/\D/g, "");
 
   const resposta = await mp.fields.createCardToken({
@@ -197,7 +226,38 @@ export async function gerarTokenDoCartao(
   });
 
   if (!resposta?.id) throw new Error("Não foi possível validar o cartão.");
-  return resposta.id;
+
+  return {
+    cardToken: resposta.id,
+    cardBrand: await descobrirBandeira(mp, resposta.first_six_digits),
+    cardLast4: resposta.last_four_digits,
+    cardExpMonth: resposta.expiration_month,
+    cardExpYear: resposta.expiration_year,
+    cartaoNome: resposta.cardholder?.name ?? dados.titular.trim(),
+  };
+}
+
+/**
+ * Bandeira do cartão a partir do BIN (os seis primeiros dígitos).
+ *
+ * A tokenização não devolve a bandeira, e a API a repassa ao Mercado Pago como
+ * `payment_method_id`. Não é obrigatória — sem ela o MP infere do próprio
+ * token —, mas é ela que o painel exibe ao lado dos quatro últimos dígitos.
+ *
+ * Falha aqui não pode derrubar o pagamento: sem bandeira o checkout segue, e o
+ * campo fica nulo como já ficava antes.
+ */
+async function descobrirBandeira(
+  mp: Mp,
+  bin: string | undefined,
+): Promise<string | undefined> {
+  if (!bin || bin.length < 6) return undefined;
+  try {
+    const r = await mp.getPaymentMethods({ bin });
+    return r?.results?.[0]?.id;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

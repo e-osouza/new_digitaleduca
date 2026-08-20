@@ -7,7 +7,6 @@ import { Aviso, Campo } from "@/components/campo";
 import { formatarPreco } from "@/lib/format";
 import {
   cpfValido,
-  exigeCpf,
   formatarCpf,
   opcoesDeCobranca,
   type Cobranca,
@@ -125,7 +124,15 @@ function Formulario({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const precisaCpf = exigeCpf(cobranca);
+  /*
+   * CPF em qualquer forma de pagamento, e não só no parcelado.
+   *
+   * O backend só o EXIGE no avulso, mas repassa `payerDoc` ao Mercado Pago nos
+   * dois caminhos — e no Brasil o MP costuma recusar cobrança de cartão sem a
+   * identificação do pagador. Pedir sempre troca um campo a mais por uma
+   * recusa a menos, e é o que todo checkout brasileiro já faz.
+   */
+  const precisaCpf = true;
 
   async function enviar(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -150,9 +157,9 @@ function Formulario({
        * Primeiro o token, depois a assinatura. Se a tokenização falhar, nada
        * chega ao nosso servidor — e o cartão não foi cobrado.
        */
-      const cardToken = await gerarTokenDoCartao(mp.current, {
+      const cartao = await gerarTokenDoCartao(mp.current, {
         titular,
-        cpf: precisaCpf ? cpf : undefined,
+        cpf,
       });
 
       const resposta = await fetch("/api/assinatura", {
@@ -160,9 +167,14 @@ function Formulario({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planoId: plano.id,
-          cardToken,
           installments: cobranca.parcelas,
-          ...(precisaCpf ? { payerDoc: cpf } : {}),
+          payerDoc: cpf,
+          /*
+           * Vai o token E os metadados. A API grava bandeira, quatro últimos
+           * dígitos e validade na assinatura — é o que o painel mostra depois
+           * e o que identifica o cartão numa cobrança contestada.
+           */
+          ...cartao,
         }),
       });
 
