@@ -361,6 +361,65 @@ export function IlustracaoSemEstatisticas() {
  * está "cumprida" e não há gesto a convidar; o traçado é só o percurso que
  * ainda não foi publicado.
  */
+/**
+ * Nada publicado numa listagem de conteúdo.
+ *
+ * Três cartões empilhados em perspectiva — a prateleira que ainda não tem o
+ * que mostrar. O de cima traz o triângulo de play, que é o que amarra a peça
+ * ao acervo de vídeo e a distingue da ilustração de trilhas (uma rota) e da
+ * de listas (uma pilha de itens).
+ */
+export function IlustracaoSemConteudo() {
+  return (
+    <svg viewBox="0 0 200 150" className="h-auto w-full" role="presentation">
+      <defs>
+        <radialGradient id="ilu-conteudo-brilho">
+          <stop
+            offset="0%"
+            className="text-acento"
+            stopColor="currentColor"
+            stopOpacity="0.16"
+          />
+          <stop
+            offset="100%"
+            className="text-acento"
+            stopColor="currentColor"
+            stopOpacity="0"
+          />
+        </radialGradient>
+      </defs>
+
+      <circle cx="100" cy="74" r="66" fill="url(#ilu-conteudo-brilho)" />
+
+      {/*
+        Os dois cartões de trás. Preenchidos com a cor da superfície para
+        recortarem uns aos outros sem máscara — mesma técnica das estações da
+        ilustração de trilhas.
+      */}
+      <g className="fill-superficie stroke-borda-suave" strokeWidth="2">
+        <rect x="52" y="34" width="96" height="58" rx="8" />
+        <rect x="44" y="46" width="112" height="62" rx="9" />
+      </g>
+
+      {/* O cartão da frente, onde mora o play. */}
+      <rect
+        x="36"
+        y="58"
+        width="128"
+        height="58"
+        rx="10"
+        className="fill-superficie stroke-borda"
+        strokeWidth="2.5"
+      />
+
+      <path
+        d="M92 76.5v21l18-10.5-18-10.5Z"
+        className="fill-acento opacity-45"
+      />
+    </svg>
+  );
+}
+
 export function IlustracaoSemTrilhas() {
   return (
     <svg viewBox="0 0 200 150" className="h-auto w-full" role="presentation">

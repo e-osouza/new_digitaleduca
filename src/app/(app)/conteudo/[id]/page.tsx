@@ -416,7 +416,7 @@ export default async function PaginaConteudo({
                 {/* Com mais episódios que o teto, a lista precisa de saída. */}
                 {outrosEpisodios.length > LATERAL_EPISODIOS && (
                   <Link
-                    href="/tipo/podcast"
+                    href="/podcast"
                     className="border-borda bg-superficie hover:border-acento/60 hover:bg-superficie-2 flex min-h-11 items-center justify-center rounded-full border px-5 text-sm font-semibold transition-colors"
                   >
                     Ver todos os episódios

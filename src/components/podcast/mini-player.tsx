@@ -39,7 +39,7 @@ export function MiniPlayerPodcast() {
 
       <div className="calha flex h-16 w-full items-center gap-3 sm:h-[4.5rem] sm:gap-4">
         <Link
-          href="/tipo/podcast"
+          href="/podcast"
           className="flex min-w-0 flex-1 items-center gap-3"
           aria-label="Voltar ao player do podcast"
         >

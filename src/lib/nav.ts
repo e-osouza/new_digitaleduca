@@ -23,38 +23,45 @@ export type GrupoNav = {
 export const SITE_INSTITUCIONAL = "https://digitaleduca.com.vc";
 
 /**
- * Tipos que a listagem de `/conteudo` reúne.
+ * Frase de apoio de cada listagem.
  *
- * MasterClass, curso e palestra dividem a mesma página: das três o acervo
- * espera a mesma coisa — sentar e assistir —, e separá-las obrigava a pessoa a adivinhar em
- * qual das duas listas estava o que ela procurava. O selo no card continua
- * dizendo qual é qual. Podcast fica de fora porque não é uma listagem: é um
- * reprodutor com playlist, uma tela inteiramente outra.
+ * Separada do rótulo porque muda por outro motivo: o rótulo é nome de produto
+ * ("MasterClass"), a frase é promessa de conteúdo. Palestra segue no mapa
+ * mesmo sem tela própria — o acervo dela foi migrado para MasterClass, mas o
+ * tipo continua existindo no contrato e pode voltar a receber conteúdo.
  */
-export const TIPOS_DE_CONTEUDO: TipoConteudo[] = [
-  "AULA",
-  "CURSO",
-  "PALESTRA",
-];
+export const DESCRICOES_DE_TIPO: Record<TipoConteudo, string> = {
+  CURSO: "Formações completas, em módulos, para você seguir do começo ao fim.",
+  AULA: "Encontros com quem já escalou empresas — para aplicar no dia a dia do negócio.",
+  PALESTRA: "Replays e apresentações do palco.",
+  PODCAST: "Conversas com especialistas, para ouvir enquanto você faz outra coisa.",
+};
 
-export const DESCRICAO_CONTEUDO =
-  "Cursos, super aulas e replays de quem já escalou empresas — para aplicar no dia a dia do negócio.";
-
-export const DESCRICAO_PODCAST =
-  "Conversas com especialistas, para ouvir enquanto você faz outra coisa.";
+export const DESCRICAO_PODCAST = DESCRICOES_DE_TIPO.PODCAST;
 
 /**
- * Segmentos de `/tipo/{...}` que hoje levam a `/conteudo`.
+ * Endereços que mudaram, e para onde levam hoje.
  *
- * `aula` e `palestra` são de quando cada tipo tinha a sua página; `conteudo`
- * é da versão em que a listagem unificada ainda morava sob `/tipo`. Todas
- * continuam respondendo por causa de links já compartilhados e do que ficou
- * salvo nos favoritos.
+ * Cada linha aqui é um link que alguém já compartilhou ou salvou nos
+ * favoritos. `/tipo/*` foi a forma antiga de endereçar as listagens; hoje cada
+ * uma tem caminho próprio e o segmento `/tipo` só existe para redirecionar.
+ *
+ * `aula`, `palestra` e `conteudo` caem em MasterClass: é para lá que o acervo
+ * dos dois primeiros foi, e a listagem unificada de `/conteudo` mostrava
+ * majoritariamente esse tipo.
  */
-export const ROTAS_ANTIGAS = ["aula", "palestra", "conteudo"];
+export const REDIRECIONAMENTOS: Record<string, string> = {
+  aula: "/masterclass",
+  palestra: "/masterclass",
+  conteudo: "/masterclass",
+  curso: "/cursos",
+  cursos: "/cursos",
+  masterclass: "/masterclass",
+  podcast: "/podcast",
+};
 
 export const ROTULOS_PLURAIS: Record<TipoConteudo, string> = {
-  AULA: "MasterClasses",
+  AULA: "MasterClass",
   CURSO: "Cursos",
   PALESTRA: "Palestras",
   PODCAST: "Podcasts",

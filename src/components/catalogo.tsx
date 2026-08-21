@@ -191,9 +191,9 @@ export async function Catalogo() {
 
       {aulas.data.length > 0 && (
         <Trilho
-          titulo="MasterClasses"
+          titulo="MasterClass"
           descricao="Aulas aprofundadas para aplicar no dia a dia"
-          verMais={{ href: "/conteudo", rotulo: "Ver todas" }}
+          verMais={{ href: "/masterclass", rotulo: "Ver todas" }}
         >
           {aulas.data.map((conteudo) => (
             <CardConteudo
@@ -211,7 +211,7 @@ export async function Catalogo() {
         <Trilho
           titulo="Cursos"
           descricao="Formações completas, do começo ao fim"
-          verMais={{ href: "/conteudo", rotulo: "Ver todos" }}
+          verMais={{ href: "/cursos", rotulo: "Ver todos" }}
         >
           {cursos.data.map((conteudo) => (
             <CardConteudo
@@ -227,7 +227,8 @@ export async function Catalogo() {
         <Trilho
           titulo="Palestras"
           descricao="Replays de quem já escalou empresas"
-          verMais={{ href: "/conteudo", rotulo: "Ver todas" }}
+          /* Palestra não tem tela própria: o acervo dela vive em MasterClass. */
+          verMais={{ href: "/masterclass", rotulo: "Ver todas" }}
         >
           {palestras.data.map((conteudo) => (
             <CardConteudo
@@ -243,7 +244,7 @@ export async function Catalogo() {
         <Trilho
           titulo="Podcasts"
           descricao="Conversas com quem faz acontecer"
-          verMais={{ href: "/tipo/podcast", rotulo: "Ver todos" }}
+          verMais={{ href: "/podcast", rotulo: "Ver todos" }}
         >
           {podcasts.data.map((conteudo) => (
             <CardConteudo

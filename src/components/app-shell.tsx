@@ -13,7 +13,7 @@ import {
 import { Marca, MarcaIcone } from "@/components/marca";
 import { BotaoSair } from "@/components/botao-sair";
 import { BuscaRapida } from "@/components/busca-rapida";
-import type { GrupoNav } from "@/lib/nav";
+import { ROTULOS_PLURAIS, type GrupoNav } from "@/lib/nav";
 import { Notificacoes } from "@/components/notificacoes";
 
 const CHAVE_RECOLHIDO = "de:menu-recolhido";
@@ -75,17 +75,23 @@ const GRUPOS: GrupoNav[] = [
     titulo: "Para você",
     itens: [
       /*
-       * Aula e palestra numa entrada só: as duas se assistem do mesmo jeito, e
-       * separá-las obrigava a escolher a lista antes de saber onde estava o
-       * que se procura. O selo no card continua dizendo qual é qual.
+       * A ordem é a do produto, não a do acervo: curso primeiro porque é o
+       * compromisso mais longo, trilha em seguida porque organiza o resto, e
+       * MasterClass e podcast como consumo avulso.
+       *
+       * Os rótulos vêm de `ROTULOS_PLURAIS`, e não escritos aqui: "MasterClass"
+       * é nome de PRODUTO sobre o tipo `AULA`, que é contrato de API e viaja
+       * para o app mobile já instalado. Duplicar o texto foi o que tornou
+       * arriscada a troca anterior de "Aula" por "MasterClass" no painel.
        */
       {
-        href: "/conteudo",
-        rotulo: "Conteúdo",
+        href: "/cursos",
+        rotulo: ROTULOS_PLURAIS.CURSO,
         icone: (
           <>
-            <path d="M10 4 3 7.5 10 11l7-3.5L10 4Z" />
-            <path d="M6 9.5V14c0 1.1 1.8 2 4 2s4-.9 4-2V9.5" />
+            <path d="M4 4.5h9a2 2 0 0 1 2 2v9H6a2 2 0 0 1-2-2v-9Z" />
+            <path d="M4 13.5a2 2 0 0 1 2-2h9" />
+            <path d="M7.5 7.5h4" />
           </>
         ),
       },
@@ -101,8 +107,18 @@ const GRUPOS: GrupoNav[] = [
         ),
       },
       {
-        href: "/tipo/podcast",
-        rotulo: "Podcasts",
+        href: "/masterclass",
+        rotulo: ROTULOS_PLURAIS.AULA,
+        icone: (
+          <>
+            <path d="M10 4 3 7.5 10 11l7-3.5L10 4Z" />
+            <path d="M6 9.5V14c0 1.1 1.8 2 4 2s4-.9 4-2V9.5" />
+          </>
+        ),
+      },
+      {
+        href: "/podcast",
+        rotulo: ROTULOS_PLURAIS.PODCAST,
         icone: (
           <>
             <rect x="7.5" y="2.5" width="5" height="9" rx="2.5" />

@@ -30,7 +30,7 @@ export const PARAM_EPISODIO = "episodio";
 /**
  * Destino de um podcast clicado em qualquer lugar da plataforma.
  *
- * Podcast não vai para a ficha do conteúdo como aula e palestra: ele abre na
+ * Podcast não vai para a ficha do conteúdo como MasterClass e curso: abre na
  * própria tela do podcast, com o player e a playlist, já tocando o episódio
  * escolhido. Um episódio de ~20 min que se ouve em sequência não pede uma
  * página de apresentação no meio do caminho.
@@ -40,7 +40,7 @@ export const PARAM_EPISODIO = "episodio";
  * fique para trás numa mudança.
  */
 export function rotaDoEpisodio(conteudoId: number) {
-  return `/tipo/podcast?${PARAM_EPISODIO}=${conteudoId}`;
+  return `/podcast?${PARAM_EPISODIO}=${conteudoId}`;
 }
 
 /**
