@@ -7,12 +7,14 @@ import { formatarData, formatarRelogio } from "@/lib/format";
 import Link from "next/link";
 import { PARAM_EPISODIO, rotaDoEpisodio } from "@/lib/podcast";
 import {
+  LIMIAR_CONCLUSAO,
   useReprodutorPodcast,
   type Episodio,
   type ModoPodcast,
 } from "@/components/podcast/provedor";
 
 const VELOCIDADES = [1, 1.25, 1.5, 2];
+
 
 /**
  * Tela do podcast: player à esquerda, playlist à direita.
@@ -182,6 +184,22 @@ export function PaginaPodcast({
   const preenchido = duracao > 0 ? Math.min((tempo / duracao) * 100, 100) : 0;
   const modoVideo = r.modo === "video";
   const ouvidoEmFoco = r.concluidos.has(emFoco.conteudoId) || emFoco.concluido;
+  /*
+   * Quando oferecer "ouvir de novo".
+   *
+   * A pergunta certa não é se o episódio está carregado — é ONDE ele está.
+   * Chegar por um card já o deixa no ar, parado na posição salva, que num
+   * episódio terminado é o fim: ali "continuar" não significa nada.
+   *
+   * Então: já ouvido, parado, e a agulha ou no começo (nunca recomeçou) ou
+   * além do mesmo limiar que marca o episódio como concluído — reaproveitado
+   * de propósito, para o botão não discordar do visto da playlist. Se a pessoa
+   * pausou no meio de uma segunda escuta, isto é falso e o botão volta a ser
+   * continuar: reiniciar ali jogaria fora o que ela acabou de ouvir.
+   */
+  const naPonta =
+    r.tempo <= 1 || (duracao > 0 && r.tempo / duracao >= LIMIAR_CONCLUSAO);
+  const reouvir = ouvidoEmFoco && !r.tocando && naPonta;
   const progressoEmFoco = noAr ? preenchido : emFoco.percentual;
 
   return (
@@ -373,17 +391,37 @@ export function PaginaPodcast({
                 <IconePular sentido="tras" />
               </Comando>
 
+              {/*
+                Episódio já ouvido vira "ouvir de novo", e não um play comum.
+                A diferença não é só o ícone: a posição salva de um episódio
+                terminado está NO FIM, então o play normal retomaria no último
+                segundo e acabaria na hora. Este recomeça do zero.
+
+                Só vale enquanto ele não está no ar — depois de começar de
+                novo, o botão volta a ser pausar/continuar como qualquer outro.
+              */}
               <button
                 type="button"
-                onClick={() => (noAr ? r.alternar() : r.abrir(emFoco, episodios))}
+                onClick={() => {
+                  if (noAr) {
+                    r.alternar();
+                    return;
+                  }
+                  r.abrir(emFoco, episodios, { doComeco: reouvir });
+                }}
                 disabled={r.carregando}
-                aria-label={r.tocando ? "Pausar" : "Tocar"}
+                aria-label={
+                  r.tocando ? "Pausar" : reouvir ? "Ouvir de novo" : "Tocar"
+                }
+                title={reouvir ? "Ouvir de novo desde o início" : undefined}
                 className="bg-acento hover:bg-acento-hover flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition-colors disabled:opacity-60 sm:h-16 sm:w-16"
               >
                 {r.carregando ? (
                   <IconeCarregando />
                 ) : r.tocando ? (
                   <IconePausa />
+                ) : reouvir ? (
+                  <IconeRepetir />
                 ) : (
                   <IconePlay />
                 )}
@@ -506,7 +544,14 @@ export function PaginaPodcast({
               <li key={ep.conteudoId}>
                 <button
                   type="button"
-                  onClick={() => r.abrir(ep, episodios)}
+                  /*
+                   * Episódio já ouvido recomeça do zero também aqui — pela
+                   * mesma razão do botão grande: a posição salva dele está no
+                   * fim, e "continuar" seria acabar no mesmo instante.
+                   */
+                  onClick={() =>
+                    r.abrir(ep, episodios, { doComeco: ouvido && !atual })
+                  }
                   aria-current={atual ? "true" : undefined}
                   className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors ${
                     atual
@@ -702,6 +747,25 @@ function IconePausa() {
   return (
     <svg viewBox="0 0 16 16" className="h-6 w-6" fill="currentColor">
       <path d="M4.5 3h2.5v10H4.5zM9 3h2.5v10H9z" />
+    </svg>
+  );
+}
+
+/** Seta circular — reiniciar do começo. */
+function IconeRepetir() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 12a9 9 0 1 0 2.64-6.36" />
+      <path d="M3 4v5h5" />
     </svg>
   );
 }

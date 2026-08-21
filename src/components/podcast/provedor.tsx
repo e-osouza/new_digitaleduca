@@ -51,7 +51,16 @@ type Reprodutor = {
   duracao: number;
   velocidade: number;
   modo: ModoPodcast;
-  abrir: (episodio: Episodio, fila: Episodio[]) => void;
+  /**
+   * `doComeco` ignora a posição salva e recomeça do zero. É o que o botão
+   * "Ouvir de novo" usa: num episódio terminado a posição gravada está no
+   * fim, e retomar dali daria um play que acaba no mesmo segundo.
+   */
+  abrir: (
+    episodio: Episodio,
+    fila: Episodio[],
+    opcoes?: { doComeco?: boolean },
+  ) => void;
   alternar: () => void;
   irPara: (segundos: number) => void;
   pular: (delta: number) => void;
@@ -168,6 +177,8 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
    * um tick depois) — e nenhuma das duas deve provocar render.
    */
   const posicaoRef = useRef(0);
+  /* Ligado por `abrir(..., { doComeco: true })`; some assim que a mídia carrega. */
+  const doComecoRef = useRef(false);
   const deveTocarRef = useRef(false);
   /*
    * A velocidade é lida pela anexação, mas não pode ser dependência dela:
@@ -190,11 +201,16 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
   }, [episodio]);
 
   const abrir = useCallback(
-    (alvo: Episodio, novaFila: Episodio[]) => {
+    (
+      alvo: Episodio,
+      novaFila: Episodio[],
+      opcoes?: { doComeco?: boolean },
+    ) => {
       setFila(novaFila);
       setErro(null);
       setBloqueado(false);
       deveTocarRef.current = true;
+      doComecoRef.current = Boolean(opcoes?.doComeco);
 
       // Reabrir o episódio que já está no ar é só um play.
       if (episodio?.conteudoId === alvo.conteudoId) {
@@ -203,6 +219,11 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
          * página; dar play aqui poria os dois no ar ao mesmo tempo.
          */
         if (modo === "audio") {
+          if (opcoes?.doComeco && videoRef.current) {
+            videoRef.current.currentTime = 0;
+            posicaoRef.current = 0;
+            setTempo(0);
+          }
           videoRef.current?.play().catch(() => setTocando(false));
         }
         return;
@@ -251,13 +272,17 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
         };
         if (cancelado) return;
 
+        /* Pediram do começo: a posição gravada não vale para esta abertura. */
+        const retomada = doComecoRef.current ? 0 : dados.segundos;
+        doComecoRef.current = false;
+
         videoIdRef.current = dados.videoId;
-        ultimoPing.current = dados.segundos;
-        posicaoRef.current = dados.segundos;
+        ultimoPing.current = retomada;
+        posicaoRef.current = retomada;
         setMidia({
           videoId: dados.videoId,
           vimeoId: dados.vimeoId,
-          segundos: dados.segundos,
+          segundos: retomada,
         });
       } catch (falha) {
         if (cancelado) return;
