@@ -25,13 +25,17 @@ export const SITE_INSTITUCIONAL = "https://digitaleduca.com.vc";
 /**
  * Tipos que a listagem de `/conteudo` reúne.
  *
- * Aula e palestra dividem a mesma página: das duas o acervo espera a mesma
- * coisa — sentar e assistir —, e separá-las obrigava a pessoa a adivinhar em
+ * MasterClass, curso e palestra dividem a mesma página: das três o acervo
+ * espera a mesma coisa — sentar e assistir —, e separá-las obrigava a pessoa a adivinhar em
  * qual das duas listas estava o que ela procurava. O selo no card continua
  * dizendo qual é qual. Podcast fica de fora porque não é uma listagem: é um
  * reprodutor com playlist, uma tela inteiramente outra.
  */
-export const TIPOS_DE_CONTEUDO: TipoConteudo[] = ["AULA", "PALESTRA"];
+export const TIPOS_DE_CONTEUDO: TipoConteudo[] = [
+  "AULA",
+  "CURSO",
+  "PALESTRA",
+];
 
 export const DESCRICAO_CONTEUDO =
   "Cursos, super aulas e replays de quem já escalou empresas — para aplicar no dia a dia do negócio.";
@@ -50,7 +54,8 @@ export const DESCRICAO_PODCAST =
 export const ROTAS_ANTIGAS = ["aula", "palestra", "conteudo"];
 
 export const ROTULOS_PLURAIS: Record<TipoConteudo, string> = {
-  AULA: "Aulas",
+  AULA: "MasterClasses",
+  CURSO: "Cursos",
   PALESTRA: "Palestras",
   PODCAST: "Podcasts",
 };

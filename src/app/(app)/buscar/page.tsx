@@ -28,7 +28,8 @@ const POR_PAGINA = 12;
 
 const FILTROS: { rotulo: string; valor?: TipoConteudo }[] = [
   { rotulo: "Tudo" },
-  { rotulo: "Aulas", valor: "AULA" },
+  { rotulo: "MasterClasses", valor: "AULA" },
+  { rotulo: "Cursos", valor: "CURSO" },
   { rotulo: "Palestras", valor: "PALESTRA" },
   { rotulo: "Podcasts", valor: "PODCAST" },
 ];

@@ -69,8 +69,14 @@ export function formatarData(iso: string): string {
   }).format(new Date(iso));
 }
 
+/*
+  O rótulo é apresentação; o valor é contrato. `AULA` virou "MasterClass" na
+  tela em 20/08/2026 sem que o dado mudasse — o app mobile já publicado compara
+  a string, e renomear o enum quebraria as versões instaladas.
+*/
 const ROTULOS_TIPO: Record<string, string> = {
-  AULA: "Aula",
+  AULA: "MasterClass",
+  CURSO: "Curso",
   PALESTRA: "Palestra",
   PODCAST: "Podcast",
 };

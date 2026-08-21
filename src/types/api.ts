@@ -5,7 +5,14 @@
  * Onde a spec e a resposta real divergem, o tipo segue a resposta real.
  */
 
-export type TipoConteudo = "PALESTRA" | "PODCAST" | "AULA";
+/**
+ * Os quatro tipos do enum do banco.
+ *
+ * `AULA` é exibida como **MasterClass** desde 20/08/2026, mas o VALOR continua
+ * `AULA`: ele é contrato de API com o app mobile já instalado, que compara a
+ * string. O nome novo é só apresentação — vive em `ROTULOS_TIPO`, nunca aqui.
+ */
+export type TipoConteudo = "PALESTRA" | "PODCAST" | "AULA" | "CURSO";
 export type GratuitoTipo = "NENHUM" | "PERMANENTE" | "TEMPORARIO";
 export type Role = "USER" | "SUPERADMIN" | "CORTESIA";
 export type IntervaloPlano = "day" | "week" | "month" | "year";

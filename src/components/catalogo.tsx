@@ -41,6 +41,7 @@ export async function Catalogo() {
     aulas,
     palestras,
     podcasts,
+    cursos,
     instrutores,
     listaCategorias,
     // Já vem com título, capas e duração — sem precisar cruzar com o catálogo.
@@ -58,6 +59,7 @@ export async function Catalogo() {
     listarConteudos({ tipo: "AULA", limit: 12 }),
     listarConteudos({ tipo: "PALESTRA", limit: 12 }),
     listarConteudos({ tipo: "PODCAST", limit: 12 }),
+    listarConteudos({ tipo: "CURSO", limit: 12 }),
     listarInstrutores(14),
     listarTodasCategorias(),
     progressoEmAndamento(),
@@ -189,11 +191,29 @@ export async function Catalogo() {
 
       {aulas.data.length > 0 && (
         <Trilho
-          titulo="Aulas"
-          descricao="Cursos e super aulas para aplicar no dia a dia"
+          titulo="MasterClasses"
+          descricao="Aulas aprofundadas para aplicar no dia a dia"
           verMais={{ href: "/conteudo", rotulo: "Ver todas" }}
         >
           {aulas.data.map((conteudo) => (
+            <CardConteudo
+              key={conteudo.id}
+              conteudo={conteudo}
+              progresso={progresso.get(conteudo.id)}
+            />
+          ))}
+        </Trilho>
+      )}
+
+      {/* O trilho só aparece quando existe curso publicado — enquanto o
+          catálogo não tiver nenhum, a home segue exatamente como antes. */}
+      {cursos.data.length > 0 && (
+        <Trilho
+          titulo="Cursos"
+          descricao="Formações completas, do começo ao fim"
+          verMais={{ href: "/conteudo", rotulo: "Ver todos" }}
+        >
+          {cursos.data.map((conteudo) => (
             <CardConteudo
               key={conteudo.id}
               conteudo={conteudo}
