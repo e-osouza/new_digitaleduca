@@ -37,9 +37,26 @@ export type Cobranca = {
  *
  * Plano sem `permiteParcelamento` devolve só a opção à vista — é o caso do
  * mensal, que não faria sentido parcelar.
+ *
+ * `percentualCupom` reproduz a ordem das contas do backend, e a ordem importa:
+ * o cupom incide sobre o preço cheio primeiro, e só depois o desconto à vista
+ * multiplica o que sobrou. Inverter daria outro número, e o valor na tela
+ * discordaria da fatura.
  */
-export function opcoesDeCobranca(plano: Plano): Cobranca[] {
-  const cheioCent = emCentavos(plano.preco);
+export function opcoesDeCobranca(
+  plano: Plano,
+  percentualCupom = 0,
+): Cobranca[] {
+  /*
+   * Mesmo arredondamento do `cupom.service.arredondar`: duas casas, a cada
+   * etapa. Calcular tudo de uma vez e arredondar no fim erraria centavos em
+   * alguns cupons.
+   */
+  const comCupom = percentualCupom
+    ? Math.round(plano.preco * (1 - percentualCupom / 100) * 100) / 100
+    : plano.preco;
+
+  const cheioCent = emCentavos(comCupom);
   const descontoCent = Math.round(
     (cheioCent * (plano.percentualDescontoAVista || 0)) / 100,
   );
