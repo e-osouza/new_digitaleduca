@@ -35,6 +35,14 @@ export type Episodio = {
 
 export type ModoPodcast = "audio" | "video";
 
+/** O que `/api/podcast/{id}` devolve: onde está a mídia e onde parou. */
+type Identificacao = {
+  videoId: number;
+  vimeoId: string;
+  segundos: number;
+  duracao: number;
+};
+
 type Reprodutor = {
   episodio: Episodio | null;
   fila: Episodio[];
@@ -61,6 +69,18 @@ type Reprodutor = {
     fila: Episodio[],
     opcoes?: { doComeco?: boolean },
   ) => void;
+  /**
+   * Adianta as duas idas à rede que separam o clique do som.
+   *
+   * Medido: identificar o episódio custa ~0,3s e assinar a URL no Vimeo custa
+   * de 0,8s a 2s — tudo DEPOIS do clique, em série. Chamando isto quando o
+   * episódio entra em foco, esse tempo corre enquanto a pessoa ainda lê a
+   * ficha, e o play encontra o trabalho pronto.
+   *
+   * Silencioso de propósito: falha aqui não vira erro na tela, só desiste do
+   * adiantamento. Quem reporta é a abertura de verdade.
+   */
+  preparar: (episodio: Episodio) => void;
   alternar: () => void;
   irPara: (segundos: number) => void;
   pular: (delta: number) => void;
@@ -177,6 +197,12 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
    * um tick depois) — e nenhuma das duas deve provocar render.
    */
   const posicaoRef = useRef(0);
+  /*
+   * Episódios já adiantados, por conteúdo. Guardar a PROMESSA, e não o
+   * resultado, evita disparar duas buscas quando o preparo e o clique se
+   * cruzam — o segundo pega a mesma promessa em andamento.
+   */
+  const preparados = useRef(new Map<number, Promise<Identificacao>>());
   /* Ligado por `abrir(..., { doComeco: true })`; some assim que a mídia carrega. */
   const doComecoRef = useRef(false);
   const deveTocarRef = useRef(false);
@@ -240,6 +266,60 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
   );
 
   /*
+   * Busca a identificação UMA vez por episódio e adianta a assinatura da URL.
+   *
+   * A promessa fica no mapa para o clique reaproveitar o que o preparo já
+   * começou. É consumida de uma vez só (`delete` ao usar): a posição salva
+   * muda a cada escuta, e reaproveitá-la depois faria o episódio retomar num
+   * ponto velho.
+   */
+  const identificarEpisodio = useCallback(
+    (conteudoId: number): Promise<Identificacao> => {
+      const emAndamento = preparados.current.get(conteudoId);
+      if (emAndamento) return emAndamento;
+
+      const promessa = (async () => {
+        const resposta = await fetch(`/api/podcast/${conteudoId}`);
+        if (!resposta.ok) {
+          const corpo = (await resposta.json().catch(() => ({}))) as {
+            erro?: string;
+          };
+          const falha: Error & { status?: number } = new Error(
+            corpo.erro ?? "Não foi possível abrir o episódio.",
+          );
+          falha.status = resposta.status;
+          throw falha;
+        }
+
+        const dados = (await resposta.json()) as Identificacao;
+
+        /*
+         * Já dispara a assinatura da URL, que é a parte cara (0,8s a 2s). O
+         * resultado é descartado: quem o consome é a etapa 2, e a essa altura
+         * a resposta já está no cache HTTP do navegador.
+         */
+        void fetch(`/api/video/${dados.vimeoId}/link`).catch(() => {});
+
+        return dados;
+      })();
+
+      /* Falha não fica grudada no mapa: a próxima tentativa recomeça limpa. */
+      promessa.catch(() => preparados.current.delete(conteudoId));
+      preparados.current.set(conteudoId, promessa);
+      return promessa;
+    },
+    [],
+  );
+
+  const preparar = useCallback(
+    (alvo: Episodio) => {
+      // Silencioso: preparo que falha não vira erro na tela.
+      void identificarEpisodio(alvo.conteudoId).catch(() => {});
+    },
+    [identificarEpisodio],
+  );
+
+  /*
    * Etapa 1 — identificar o episódio.
    *
    * Só descobre `videoId`/`vimeoId` e o ponto salvo. Fica separada da anexação
@@ -254,22 +334,13 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
     async function identificar() {
       if (!episodio) return;
 
-      try {
-        const resposta = await fetch(`/api/podcast/${episodio.conteudoId}`);
-        if (!resposta.ok) {
-          const corpo = (await resposta.json().catch(() => ({}))) as {
-            erro?: string;
-          };
-          if (!cancelado && resposta.status === 403) setBloqueado(true);
-          throw new Error(corpo.erro ?? "Não foi possível abrir o episódio.");
-        }
+      const conteudoId = episodio.conteudoId;
 
-        const dados = (await resposta.json()) as {
-          videoId: number;
-          vimeoId: string;
-          segundos: number;
-          duracao: number;
-        };
+      try {
+        // Reaproveita o que `preparar` já buscou, se houver.
+        const dados = await identificarEpisodio(conteudoId);
+        // Consumida: a posição salva envelhece a cada escuta.
+        preparados.current.delete(conteudoId);
         if (cancelado) return;
 
         /* Pediram do começo: a posição gravada não vale para esta abertura. */
@@ -286,6 +357,10 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
         });
       } catch (falha) {
         if (cancelado) return;
+        preparados.current.delete(conteudoId);
+        if ((falha as Error & { status?: number })?.status === 403) {
+          setBloqueado(true);
+        }
         setCarregando(false);
         setErro(
           falha instanceof Error ? falha.message : "Falha ao abrir o episódio.",
@@ -298,7 +373,13 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
     return () => {
       cancelado = true;
     };
-  }, [episodio]);
+    /*
+     * `identificarEpisodio` é estável (useCallback sem dependências) e entra
+     * aqui só para o lint parar de apontar. O que realmente dispara este
+     * efeito é a troca de episódio — incluí-la muda nada, mas deixa a lista
+     * honesta.
+     */
+  }, [episodio, identificarEpisodio]);
 
   /*
    * Etapa 2 — anexar a fonte, e SÓ em modo áudio.
@@ -338,7 +419,26 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
           if (cancelado) return;
 
           if (Hls.isSupported()) {
-            const hls = new Hls({ enableWorker: true });
+            const hls = new Hls({
+              enableWorker: true,
+              /*
+               * Começa pelo nível mais leve e sobe depois.
+               *
+               * Sem isto o hls.js sonda a banda antes de escolher, e o
+               * primeiro segmento vem na qualidade mais alta que ele arriscar
+               * — som que ninguém distingue num podcast, pago com segundos de
+               * espera. A régua de qualidade (ABR) continua ligada: ela sobe
+               * sozinha depois que o áudio já começou.
+               */
+              startLevel: 0,
+              /*
+               * Estimativa inicial de banda deliberadamente conservadora, pelo
+               * mesmo motivo: entre errar para cima (buffer vazio, espera) e
+               * errar para baixo (um trecho em qualidade menor), o segundo é
+               * invisível num episódio falado.
+               */
+              abrEwmaDefaultEstimate: 500_000,
+            });
             hls.loadSource(linkHls);
             hls.attachMedia(video);
             hlsRef.current = hls;
@@ -685,6 +785,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       velocidade,
       modo,
       abrir,
+      preparar,
       alternar,
       irPara,
       pular,
@@ -712,6 +813,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       modo,
       abrir,
       alternar,
+      preparar,
       irPara,
       pular,
       definirVelocidade,

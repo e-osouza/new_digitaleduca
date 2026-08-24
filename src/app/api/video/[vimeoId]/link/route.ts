@@ -23,7 +23,8 @@ export async function GET(
      * As legendas vão com a URL já reescrita para o nosso proxy — o <track> do
      * navegador não envia o cabeçalho de autenticação que a API exige.
      */
-    return NextResponse.json({
+    return NextResponse.json(
+      {
       url,
       sources: sources ?? [],
       legendas: (textTracks ?? []).map((faixa) => ({
@@ -33,7 +34,23 @@ export async function GET(
         kind: faixa.kind,
         src: `/api/video/${vimeoId}/legenda/${faixa.id}`,
       })),
-    });
+      },
+      {
+        /*
+         * `private`: o cache é do navegador de quem pediu, nunca de um
+         * intermediário. A URL assinada é uma chave de acesso à mídia, e
+         * guardá-la num cache compartilhado a entregaria a quem não passou
+         * pela checagem acima.
+         *
+         * Os 10 minutos existem para o clique reaproveitar o que o preparo do
+         * player já buscou: sem cache, a mesma URL era assinada duas vezes e
+         * o play pagava ~1s de novo. A assinatura do Vimeo vale ~24h, então a
+         * janela é folgada — curta o bastante para uma perda de acesso no meio
+         * do caminho não render muito mais que isso.
+         */
+        headers: { "Cache-Control": "private, max-age=600" },
+      },
+    );
   } catch (erro) {
     if (!(erro instanceof ApiError)) throw erro;
 

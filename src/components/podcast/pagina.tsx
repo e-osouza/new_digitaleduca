@@ -44,7 +44,7 @@ export function PaginaPodcast({
    * então usá-lo como dependência faria os efeitos abaixo rodarem umas quatro
    * vezes por segundo. Estas duas são estáveis.
    */
-  const { registrarPagina, cederPara, retomarEm, definirModo, abrir } = r;
+  const { registrarPagina, cederPara, retomarEm, definirModo, abrir, preparar } = r;
 
   /* Enquanto esta tela existe, o mini player do rodapé se cala. */
   useEffect(() => {
@@ -92,6 +92,22 @@ export function PaginaPodcast({
   const pessoasEmFoco = (
     emFoco?.participantes.length ? emFoco.participantes : (emFoco?.apresentadores ?? [])
   ).join(", ");
+
+  /*
+   * Adianta a mídia do episódio em foco.
+   *
+   * As duas idas à rede que separam o clique do som — identificar o episódio e
+   * assinar a URL no Vimeo — custavam 1,6s medidos, e aconteciam DEPOIS do
+   * clique. Disparadas aqui, correm enquanto a pessoa lê a ficha.
+   *
+   * Só quando não há nada tocando: com o áudio no ar, a banda é do episódio
+   * atual, e disputá-la para adiantar o seguinte atrapalharia quem está
+   * ouvindo agora.
+   */
+  useEffect(() => {
+    if (!emFoco || r.episodio) return;
+    preparar(emFoco);
+  }, [emFoco, r.episodio, preparar]);
 
   /*
    * Posição do <Player> de vídeo, gravada em ref porque chega a cada
