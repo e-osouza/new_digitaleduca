@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { capaVertical, formatarRelogio } from "@/lib/format";
+import { usePlayerConteudo } from "@/components/player-conteudo";
 import type { Conteudo, Video } from "@/types/api";
 
 /**
@@ -98,9 +101,40 @@ function LinhaAula({
 
   const capa = video.thumbnailUrl ?? capaReserva;
 
+  const player = usePlayerConteudo();
+
+  /*
+   * Continua sendo um <a> com href de verdade, e não um <button>.
+   *
+   * O clique comum é interceptado e abre o player sobre a ficha — que é o
+   * ponto desta tela. Mas Ctrl/Cmd+clique, o botão do meio e "abrir em nova
+   * aba" seguem funcionando e caem em `/assistir`, porque o href está lá. Um
+   * <button> teria jogado fora esses três gestos, além do endereço que a
+   * pessoa vê ao passar o mouse.
+   *
+   * Sem player na página (conteúdo sem vídeo, ou visitante sem acesso) o link
+   * volta a ser um link: `player` é null e o clique navega normalmente.
+   */
   return (
     <Link
       href={`/assistir/${conteudoId}?aula=${video.id}`}
+      onPointerEnter={player?.prepararPlayer}
+      onFocus={player?.prepararPlayer}
+      onClick={(evento) => {
+        if (!player) return;
+        // Deixa passar os gestos que pedem outra aba/janela.
+        if (
+          evento.metaKey ||
+          evento.ctrlKey ||
+          evento.shiftKey ||
+          evento.altKey ||
+          evento.button !== 0
+        ) {
+          return;
+        }
+        evento.preventDefault();
+        player.abrirAula(video.id);
+      }}
       className="border-borda-suave bg-superficie hover:border-acento/60 hover:bg-superficie-2 ease-suave flex items-center gap-4 rounded-xl border p-3 transition-[border-color,background-color,transform] duration-200 active:scale-[0.995]"
     >
       <span className="bg-superficie-2 relative aspect-video w-28 shrink-0 overflow-hidden rounded-lg sm:w-36">

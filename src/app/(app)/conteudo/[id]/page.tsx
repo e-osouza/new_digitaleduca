@@ -33,6 +33,7 @@ import { Selo } from "@/components/selo";
 import { SemAcesso } from "@/components/sem-acesso";
 import { BotaoSalvar } from "@/components/botao-salvar";
 import { BotaoAssistir } from "@/components/botao-assistir";
+import { ProvedorPlayerConteudo } from "@/components/player-conteudo";
 import type { AulaDoModal } from "@/components/modal-player";
 import type { Conteudo, Envelope, Video } from "@/types/api";
 
@@ -187,7 +188,14 @@ export default async function PaginaConteudo({
   const vinculoNaLista =
     salvos.find((item) => item.conteudo?.id === numero)?.id ?? null;
 
-  return (
+  /*
+   * O provedor precisa envolver a capa (onde fica "Assistir agora") E o corpo
+   * (onde fica a lista de aulas): é o que faz os dois abrirem o MESMO player.
+   *
+   * Sem aula com vídeo não há player nenhum, e a página sai sem o provedor —
+   * `usePlayerConteudo` devolve null e a lista volta a ser link comum.
+   */
+  const corpo = (
     <div className="flex flex-col gap-10 pb-8 sm:gap-14">
       {/* ---- capa ---- */}
       <section className="relative min-h-[300px] overflow-hidden sm:min-h-[380px] lg:min-h-[440px]">
@@ -299,12 +307,7 @@ export default async function PaginaConteudo({
                   )}
                 </Link>
               ) : (
-                <BotaoAssistir
-                  aulas={aulasDoModal}
-                  inicialId={aulaInicial.id}
-                  rotulo={rotuloAssistir}
-                  abrirAoCarregar={assistir === "1"}
-                />
+                <BotaoAssistir rotulo={rotuloAssistir} />
               ))}
 
             <BotaoSalvar conteudoId={conteudo.id} salvoId={vinculoNaLista} />
@@ -445,6 +448,23 @@ export default async function PaginaConteudo({
         </Trilho>
       )}
     </div>
+  );
+
+  /*
+   * Mesma condição do botão "Assistir agora": bloqueado ou sem aula com vídeo,
+   * não há player para prover — e a lista de aulas volta a levar para
+   * `/assistir`, onde a tela de conteúdo exclusivo explica o porquê.
+   */
+  if (bloqueado || !aulaInicial) return corpo;
+
+  return (
+    <ProvedorPlayerConteudo
+      aulas={aulasDoModal}
+      inicialId={aulaInicial.id}
+      abrirAoCarregar={assistir === "1"}
+    >
+      {corpo}
+    </ProvedorPlayerConteudo>
   );
 }
 
