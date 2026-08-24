@@ -1,25 +1,32 @@
 import type { ReactNode } from "react";
 import { Marca } from "@/components/marca";
-import { SITE_INSTITUCIONAL } from "@/lib/nav";
+import {
+  DESCRICOES_DE_TIPO,
+  ROTULOS_PLURAIS,
+  SITE_INSTITUCIONAL,
+} from "@/lib/nav";
 
 /** O que o painel anuncia. É o acervo real, sem promessa que a plataforma não cumpra. */
+/*
+ * O que a plataforma oferece, na MESMA ordem e com as MESMAS palavras do menu.
+ *
+ * Os textos vêm de `nav.ts` de propósito. Escritos à mão aqui, eles
+ * envelheceram: esta tela anunciou "Aulas e cursos" e "Palestras" por um bom
+ * tempo depois de o produto ter virado Cursos, Trilhas, MasterClass e
+ * Podcasts — a primeira coisa que um visitante lia era um catálogo que ele não
+ * ia encontrar do outro lado do login.
+ *
+ * Trilha é a única linha escrita aqui: ela não é um tipo de conteúdo, é a
+ * costura entre eles, e por isso não tem verbete em `DESCRICOES_DE_TIPO`.
+ */
 const OFERTA = [
-  {
-    titulo: "Aulas e cursos",
-    texto: "Conteúdo em módulos, para aplicar no dia a dia do negócio.",
-  },
-  {
-    titulo: "Palestras",
-    texto: "Replays de quem já escalou empresas.",
-  },
-  {
-    titulo: "Podcasts",
-    texto: "Conversas com especialistas, para ouvir enquanto você faz outra coisa.",
-  },
+  { titulo: ROTULOS_PLURAIS.CURSO, texto: DESCRICOES_DE_TIPO.CURSO },
   {
     titulo: "Trilhas",
     texto: "Uma sequência montada para o seu objetivo, no seu ritmo.",
   },
+  { titulo: ROTULOS_PLURAIS.AULA, texto: DESCRICOES_DE_TIPO.AULA },
+  { titulo: ROTULOS_PLURAIS.PODCAST, texto: DESCRICOES_DE_TIPO.PODCAST },
 ];
 
 /**
@@ -88,11 +95,20 @@ export function MolduraAcesso({
         <div className="relative flex flex-col gap-10 px-12 py-16 xl:px-16">
           <div className="flex flex-col gap-2">
             <p className="font-display text-2xl leading-tight font-semibold text-balance text-white xl:text-3xl">
-              Educação corporativa para aplicar amanhã.
+              Conteúdo que você usa na próxima reunião.
             </p>
+            {/*
+              Duas exigências, e as duas vieram de erro anterior:
+              1. Servir às TRÊS telas — entrar, criar conta e recuperar senha.
+                 A frase antiga dizia "Entre para continuar de onde parou", o
+                 que soava errado para quem estava criando a primeira conta.
+              2. Não repetir os itens abaixo. "Com quem já escalou empresas"
+                 já é o texto de MasterClass, e dizer o mesmo duas vezes na
+                 mesma tela gasta a única frase que temos aqui.
+            */}
             <p className="max-w-md leading-relaxed text-white/70">
-              Entre para continuar de onde parou — o progresso acompanha você no
-              navegador e no aplicativo.
+              Comece numa tela e continue em outra: o seu progresso acompanha
+              você no navegador e no aplicativo.
             </p>
           </div>
 

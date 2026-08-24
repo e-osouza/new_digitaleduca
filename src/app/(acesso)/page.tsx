@@ -40,7 +40,7 @@ export default async function Home({
   return (
     <MolduraAcesso
       titulo="Entrar"
-      descricao="Acesse suas trilhas, aulas e o progresso de onde parou."
+      descricao="Suas trilhas, seus cursos e o progresso de onde você parou."
       /*
        * `criada=1` chega de quem acabou de se cadastrar sem que o login
        * automático desse certo. Sem esta nota, a pessoa criava a conta e caía
