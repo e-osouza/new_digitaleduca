@@ -53,6 +53,12 @@ export function listarConteudos(opcoes: {
   tipo?: TipoConteudo;
   destaque?: boolean;
   instrutorId?: number;
+  /**
+   * Filtram no BANCO desde 24/08/2026. Antes a rota os ignorava, e a listagem
+   * precisava pedir o acervo inteiro para recortar em memória.
+   */
+  categoriaId?: number;
+  subcategoriaId?: number;
   page?: number;
   limit?: number;
 }) {

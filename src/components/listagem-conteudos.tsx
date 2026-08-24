@@ -6,6 +6,7 @@ import {
 } from "@/lib/queries";
 import { FAIXA } from "@/lib/ui";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CardConteudo } from "@/components/card-conteudo";
 import { EstadoVazio } from "@/components/estado-vazio";
 import { IlustracaoSemConteudo } from "@/components/ilustracoes";
@@ -51,37 +52,54 @@ export async function ListagemConteudos({
   const comFiltro = Boolean(categoria || subcategoria);
 
   /*
+   * A API pagina e filtra — pedimos só os 12 desta página.
+   *
+   * Antes esta tela pedia o acervo inteiro (`limit: 200`, ~120 KB) e recortava
+   * em memória, porque `/conteudos` ignorava `categoriaId`. Passou a aceitar
+   * em 24/08/2026, e a diferença é grande: 22 KB no lugar de 120 KB, e o custo
+   * deixa de crescer com o tamanho do catálogo.
+   *
    * `/conteudos/categorias?tipo=` devolve só as categorias que têm conteúdo
    * daquele tipo — é o que faz os filtros serem relevantes para cada tela.
    */
   const [opcoesCategoria, subcategorias, acervo, progresso] = await Promise.all([
     listarCategorias(tipo),
     listarSubcategorias(),
-    // O acervo de um tipo cabe numa página só, e a resposta é cacheada, então
-    // filtramos e paginamos aqui mesmo.
-    listarConteudos({ tipo, limit: 200 }),
+    listarConteudos({
+      tipo,
+      categoriaId: categoria,
+      subcategoriaId: subcategoria,
+      page: paginaAtual,
+      limit: POR_PAGINA,
+    }),
     mapaDeProgresso(),
   ]);
 
-  /*
-   * O filtro é aplicado sobre a própria listagem: cada conteúdo já traz
-   * `categoriaId` e `subcategoriaId`. Usar `/conteudos/search` traria um
-   * recorte sem `videos`, e o card perderia a duração.
-   */
-  const filtrados = acervo.data.filter((conteudo) => {
-    if (categoria && conteudo.categoriaId !== categoria) return false;
-    if (subcategoria && conteudo.subcategoriaId !== subcategoria) return false;
-    return true;
-  });
-
-  const total = filtrados.length;
-  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  // Trocar de filtro pode deixar a página atual além do fim da nova lista.
-  const paginaValida = Math.min(paginaAtual, totalPaginas);
-  const itens = filtrados.slice(
-    (paginaValida - 1) * POR_PAGINA,
-    paginaValida * POR_PAGINA,
+  const total = acervo.pagination?.total ?? acervo.data.length;
+  const totalPaginas = Math.max(
+    1,
+    acervo.pagination?.totalPages ?? Math.ceil(total / POR_PAGINA),
   );
+  /*
+   * Página além do fim: manda de volta para a última que existe.
+   *
+   * Acontece ao apertar um filtro estando na página 5. Antes o recorte em
+   * memória devolvia a última página sozinho; agora a API responde uma lista
+   * vazia, que a tela leria como "nada nesta combinação" — uma mentira, já que
+   * há conteúdo, só não naquela página. O redirecionamento também conserta a
+   * URL, em vez de deixá-la apontando para o vazio.
+   */
+  if (total > 0 && paginaAtual > totalPaginas) {
+    const busca = new URLSearchParams();
+    if (totalPaginas > 1) busca.set("pagina", String(totalPaginas));
+    if (categoria) busca.set("categoriaId", String(categoria));
+    if (subcategoria) busca.set("subcategoriaId", String(subcategoria));
+    const cauda = busca.toString();
+    redirect(cauda ? `${base}?${cauda}` : base);
+  }
+
+  const paginaValida = Math.min(paginaAtual, totalPaginas);
+  const itens = acervo.data;
 
   const categorias = (opcoesCategoria?.data ?? []).map((c) => ({
     id: c.id,
@@ -100,7 +118,7 @@ export async function ListagemConteudos({
    * não há o que filtrar, e o <h1> ficaria sozinho no topo de uma página em
    * branco. Com filtro é outra história: ver abaixo.
    */
-  if (acervo.data.length === 0) {
+  if (total === 0 && !comFiltro) {
     return (
       <div className={`${FAIXA} flex flex-1 flex-col py-8 sm:py-10`}>
         <EstadoVazio
