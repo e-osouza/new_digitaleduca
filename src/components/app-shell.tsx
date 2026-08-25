@@ -178,6 +178,23 @@ const GRUPOS: GrupoNav[] = [
         ),
       },
       {
+        /*
+          Só aparece para quem tem papel CLUB — ver `gruposPara`. Fica coloado
+          em "Meu perfil" porque é da mesma natureza: administrar a própria
+          conta, e não navegar pelo acervo.
+        */
+        href: "/club",
+        rotulo: "Club",
+        icone: (
+          <>
+            <circle cx="7.5" cy="7" r="2.75" />
+            <path d="M2.5 16.5c0-2.8 2.2-4.6 5-4.6s5 1.8 5 4.6" />
+            <path d="M13.2 5.1a2.75 2.75 0 0 1 0 5.3" />
+            <path d="M14.7 12.5c1.8.6 3 2 3 4" />
+          </>
+        ),
+      },
+      {
         href: "/estatisticas",
         rotulo: "Estatísticas",
         icone: (
@@ -227,12 +244,28 @@ const GRUPOS: GrupoNav[] = [
 ];
 
 /**
+ * O menu de quem está vendo.
+ *
+ * O Club é o único item condicional: administrar um time só faz sentido para
+ * quem tem o papel. Filtrar aqui, e não esconder com CSS, mantém o item fora
+ * também da ordem de foco e dos leitores de tela.
+ */
+function gruposPara(ehClub: boolean): GrupoNav[] {
+  if (ehClub) return GRUPOS;
+
+  return GRUPOS.map((grupo) => ({
+    ...grupo,
+    itens: grupo.itens.filter((item) => item.href !== "/club"),
+  }));
+}
+
+/**
  * Href do item que representa a página atual — no máximo um, já que nenhuma
  * rota do menu é prefixo de outra. O marcador deslizante precisa desse valor
  * único: ele é um elemento só, e não uma marca por item.
  */
-function acharAtivo(caminho: string) {
-  for (const grupo of GRUPOS) {
+function acharAtivo(caminho: string, ehClub: boolean) {
+  for (const grupo of gruposPara(ehClub)) {
     for (const item of grupo.itens) {
       if (caminho === item.href || caminho.startsWith(`${item.href}/`)) {
         return item.href;
@@ -256,6 +289,7 @@ export function AppShell({
   email,
   avatar,
   saudacao,
+  ehClub = false,
   children,
 }: {
   nome: string | null;
@@ -263,6 +297,8 @@ export function AppShell({
   avatar: string | null;
   /** Já resolvida no servidor — ver `lib/saudacao`. */
   saudacao: { texto: string; periodo: "dia" | "noite" };
+  /** Papel CLUB: só então o menu mostra o painel do time. */
+  ehClub?: boolean;
   children: React.ReactNode;
 }) {
   const caminho = usePathname();
@@ -298,6 +334,7 @@ export function AppShell({
         nome={nome}
         email={email}
         avatar={avatar}
+        ehClub={ehClub}
         recolhido={recolhido}
         aoAlternarRecolhido={() => gravarRecolhido(!recolhido)}
         /*
@@ -330,6 +367,7 @@ export function AppShell({
           nome={nome}
           email={email}
           avatar={avatar}
+          ehClub={ehClub}
           inerte={!gavetaAberta}
           aoNavegar={() => setGavetaAberta(false)}
           className={`border-borda-suave bg-cromo ease-saida relative flex h-full w-[min(19rem,85vw)] border-r shadow-2xl transition-transform duration-300 ${
@@ -402,6 +440,7 @@ function Navegacao({
   nome,
   email,
   avatar,
+  ehClub = false,
   className,
   aoNavegar,
   inerte = false,
@@ -412,6 +451,8 @@ function Navegacao({
   nome: string | null;
   email: string | null;
   avatar: string | null;
+  /** Papel CLUB: adiciona o item do painel do time. */
+  ehClub?: boolean;
   className: string;
   /** Só a gaveta do mobile precisa reagir: navegar deve fechá-la. */
   aoNavegar?: () => void;
@@ -421,7 +462,7 @@ function Navegacao({
   recolhido?: boolean;
   aoAlternarRecolhido?: () => void;
 }) {
-  const ativo = acharAtivo(caminho);
+  const ativo = acharAtivo(caminho, ehClub);
   const navRef = useRef<HTMLElement | null>(null);
   const itensRef = useRef(new Map<string, HTMLAnchorElement>());
   const [marcador, setMarcador] = useState<{
@@ -544,7 +585,7 @@ function Navegacao({
           />
         )}
 
-        {GRUPOS.map((grupo, indiceGrupo) => (
+        {gruposPara(ehClub).map((grupo, indiceGrupo) => (
           <div key={grupo.titulo ?? `grupo-${indiceGrupo}`} className="flex flex-col gap-1">
             {grupo.titulo && !recolhido && (
               <h2 className="text-texto-3 px-3 pt-1 pb-1 text-[10px] font-semibold tracking-[0.12em] uppercase">

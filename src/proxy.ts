@@ -21,6 +21,7 @@ const ROTAS_PROTEGIDAS = [
   "/categoria",
   "/planos",
   "/conta",
+  "/club",
   "/perfil",
   "/estatisticas",
 ];

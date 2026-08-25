@@ -54,6 +54,11 @@ export default async function LayoutApp({
           email={usuario?.email ?? null}
           avatar={usuario?.avatar ?? null}
           saudacao={saudacao(usuario?.nome ?? null)}
+          /*
+            O papel já veio no /usuario/me que este layout busca de qualquer
+            forma — o item do Club no menu não custa uma requisição a mais.
+          */
+          ehClub={usuario?.role === "CLUB"}
         >
           {precisaConfirmar && <AvisoEmail />}
           {children}

@@ -4,20 +4,23 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo, Nota } from "@/components/campo";
+import { SituacaoDoClub } from "@/components/club/situacao";
+import { Vagas } from "@/components/club/vagas";
 import type { MeuTime } from "@/types/api";
 
-const data = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
+const dataCurta = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
 
 /**
- * O time do dono do Club: quem já está dentro, quem foi convidado e o que
- * sobra de vaga.
+ * O painel inteiro do dono do Club.
  *
- * Não há datas por membro de propósito. O acesso de quem está no time é o
- * acesso do dono, resolvido a cada requisição — enquanto o Club dele valer,
- * o time vê tudo; quando acabar, todo mundo perde junto, sem nada para
- * atualizar aqui.
+ * Cliente porque convidar, cancelar e remover acontecem aqui — as três
+ * escritas precisam do mesmo estado de erro e do mesmo `router.refresh()`.
+ *
+ * Não há data por membro em lugar nenhum de propósito: o acesso de quem está
+ * no time é o do dono, resolvido pela API a cada requisição. O prazo aparece
+ * uma vez só, no cartão de situação, porque é um só.
  */
-export function TimeDoClub({ time }: { time: MeuTime }) {
+export function PainelClub({ time }: { time: MeuTime }) {
   const router = useRouter();
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -25,9 +28,9 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
   const [linkNovo, setLinkNovo] = useState<{ nome: string; url: string } | null>(
     null,
   );
-  const [copiado, setCopiado] = useState(false);
 
   const semVaga = time.vagasRestantes <= 0;
+  const podeConvidar = time.ativo && !semVaga;
 
   async function convidar(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -35,8 +38,8 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
     setLinkNovo(null);
     setEnviando(true);
 
-    const dados = new FormData(evento.currentTarget);
     const formulario = evento.currentTarget;
+    const dados = new FormData(formulario);
 
     const resposta = await fetch("/api/club/time", {
       method: "POST",
@@ -58,9 +61,9 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
     formulario.reset();
 
     /*
-      Quando o e-mail não sai (SMTP fora do ar, por exemplo), o convite existe
-      igual e só falta chegar até a pessoa. Mostrar o link aqui é o que impede
-      a funcionalidade de morrer junto com o servidor de e-mail.
+      Quando o e-mail não sai, o convite existe igual e só falta chegar até a
+      pessoa. Mostrar o link aqui é o que impede o recurso de morrer junto com
+      o servidor de e-mail.
     */
     if (!corpo.emailEnviado) {
       setLinkNovo({
@@ -91,22 +94,28 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
     router.refresh();
   }
 
+  function copiar(url: string, chave: string) {
+    navigator.clipboard.writeText(url);
+    setOcupado(chave);
+    setTimeout(() => setOcupado(null), 2000);
+  }
+
   return (
-    <section className="flex flex-col gap-6">
-      <div className="border-borda bg-superficie flex flex-col gap-5 rounded-2xl border p-5 sm:p-6">
-        <header className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-base font-semibold">Seu time</h2>
-          <p className="text-texto-3 text-sm tabular-nums">
-            {time.vagasUsadas} de {time.limite} vagas em uso
+    <div className="flex flex-col gap-6">
+      <SituacaoDoClub time={time} />
+      <Vagas time={time} />
+
+      {erro && <Aviso>{erro}</Aviso>}
+
+      <section className="border-borda bg-superficie flex flex-col gap-5 rounded-2xl border p-5 sm:p-6">
+        <header className="flex flex-col gap-1">
+          <h2 className="font-display text-base font-semibold">
+            Convidar alguém
+          </h2>
+          <p className="text-texto-3 text-sm">
+            A pessoa recebe um link, escolhe a própria senha e entra no time.
           </p>
         </header>
-
-        <p className="text-texto-2 text-sm">
-          Quem entra no seu time vê todo o conteúdo da plataforma enquanto sua
-          participação no Club estiver ativa.
-        </p>
-
-        {erro && <Aviso>{erro}</Aviso>}
 
         {linkNovo && (
           <Nota>
@@ -121,26 +130,29 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
                 </code>
                 <button
                   type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(linkNovo.url);
-                    setCopiado(true);
-                    setTimeout(() => setCopiado(false), 2000);
-                  }}
+                  onClick={() => copiar(linkNovo.url, "link-novo")}
                   className="border-borda text-texto-2 hover:text-texto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
                 >
-                  {copiado ? "Copiado" : "Copiar"}
+                  {ocupado === "link-novo" ? "Copiado" : "Copiar"}
                 </button>
               </span>
             </span>
           </Nota>
         )}
 
-        {semVaga ? (
+        {!time.ativo ? (
+          <p className="border-borda bg-fundo-2 text-texto-2 rounded-lg border border-dashed p-4 text-sm">
+            Convites ficam pausados enquanto a participação não estiver ativa.
+            Você ainda pode organizar o time abaixo.
+          </p>
+        ) : semVaga ? (
           <p className="border-borda bg-fundo-2 text-texto-2 rounded-lg border border-dashed p-4 text-sm">
             Suas {time.limite} vagas estão ocupadas. Para chamar mais alguém,
-            tire alguém do time ou cancele um convite.
+            tire alguém do time ou cancele um convite em aberto.
           </p>
-        ) : (
+        ) : null}
+
+        {podeConvidar && (
           <form onSubmit={convidar} className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo
@@ -165,42 +177,48 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
             <button
               type="submit"
               disabled={enviando}
-              className="bg-acento text-white hover:bg-acento-hover flex min-h-12 w-fit items-center rounded-full px-7 text-sm font-bold transition-colors disabled:opacity-60"
+              className="bg-acento hover:bg-acento-hover flex min-h-12 w-fit items-center rounded-full px-7 text-sm font-bold text-white transition-colors disabled:opacity-60"
             >
-              {enviando ? "Convidando…" : "Convidar"}
+              {enviando ? "Convidando…" : "Enviar convite"}
             </button>
           </form>
         )}
-      </div>
+      </section>
 
-      {time.membros.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h3 className="text-texto-2 text-sm font-semibold">
-            No time ({time.membros.length})
-          </h3>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-texto-2 text-sm font-semibold">
+          No time ({time.membros.length})
+        </h2>
+
+        {time.membros.length === 0 ? (
+          <p className="border-borda bg-superficie text-texto-2 rounded-2xl border border-dashed p-6 text-center text-sm">
+            Ninguém no time ainda. Convide a primeira pessoa acima — ela passa a
+            ver todo o conteúdo pela sua participação.
+          </p>
+        ) : (
           <ul className="border-borda divide-borda bg-superficie divide-y overflow-hidden rounded-2xl border">
             {time.membros.map((membro) => (
               <li
                 key={membro.id}
-                className="flex items-center gap-3 px-4 py-3 text-sm sm:px-5"
+                className="flex items-center gap-3 px-4 py-3 sm:px-5"
               >
                 {membro.avatar ? (
                   <Image
                     src={membro.avatar}
                     alt=""
-                    width={36}
-                    height={36}
-                    className="h-9 w-9 shrink-0 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
                     unoptimized
                   />
                 ) : (
-                  <span className="bg-fundo-2 text-texto-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                  <span className="bg-fundo-2 text-texto-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
                     {membro.nome.slice(0, 1).toUpperCase()}
                   </span>
                 )}
 
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-texto truncate font-medium">
+                  <span className="text-texto truncate text-sm font-medium">
                     {membro.nome}
                   </span>
                   <span className="text-texto-3 truncate text-xs">
@@ -225,47 +243,42 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </section>
 
       {time.convites.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h3 className="text-texto-2 text-sm font-semibold">
+        <section className="flex flex-col gap-3">
+          <h2 className="text-texto-2 text-sm font-semibold">
             Aguardando aceite ({time.convites.length})
-          </h3>
+          </h2>
           <ul className="border-borda divide-borda divide-y overflow-hidden rounded-2xl border border-dashed">
             {time.convites.map((convite) => (
               <li
                 key={convite.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 text-sm sm:px-5"
+                className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5"
               >
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-texto truncate font-medium">
+                  <span className="text-texto truncate text-sm font-medium">
                     {convite.nome}
                   </span>
                   <span className="text-texto-3 truncate text-xs">
                     {convite.email} · expira em{" "}
-                    {data.format(new Date(convite.expiraEm))}
+                    {dataCurta.format(new Date(convite.expiraEm))}
                   </span>
                 </span>
 
-                {!convite.emailEnviado && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        `${window.location.origin}/convite/${convite.token}`,
-                      );
-                      setOcupado(`copiado-${convite.id}`);
-                      setTimeout(() => setOcupado(null), 2000);
-                    }}
-                    className="border-borda text-texto-2 hover:text-texto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
-                  >
-                    {ocupado === `copiado-${convite.id}`
-                      ? "Copiado"
-                      : "Copiar link"}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    copiar(
+                      `${window.location.origin}/convite/${convite.token}`,
+                      `copia-${convite.id}`,
+                    )
+                  }
+                  className="border-borda text-texto-2 hover:text-texto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
+                >
+                  {ocupado === `copia-${convite.id}` ? "Copiado" : "Copiar link"}
+                </button>
 
                 <button
                   type="button"
@@ -286,8 +299,8 @@ export function TimeDoClub({ time }: { time: MeuTime }) {
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
-    </section>
+    </div>
   );
 }

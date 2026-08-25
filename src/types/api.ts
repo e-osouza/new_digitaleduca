@@ -222,6 +222,17 @@ export interface ConviteDoTime {
 
 /** `GET /club/time` — o painel do dono do Club. */
 export interface MeuTime {
+  /**
+   * Falso quando a participação venceu. A tela continua abrindo — é ela que
+   * explica por que o time parou —, mas convidar fica travado.
+   */
+  ativo: boolean;
+  /** Período da associação. Nulo quando nunca houve um gravado. */
+  periodo: {
+    dataInicio: string;
+    dataFim: string | null;
+    status: string;
+  } | null;
   limite: number;
   membros: MembroDoTime[];
   convites: ConviteDoTime[];
