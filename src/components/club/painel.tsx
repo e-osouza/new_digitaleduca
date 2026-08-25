@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo, Nota } from "@/components/campo";
-import { SituacaoDoClub } from "@/components/club/situacao";
 import type { MeuTime } from "@/types/api";
 
 const dataCurta = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
@@ -111,11 +110,9 @@ export function PainelClub({ time }: { time: MeuTime }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <SituacaoDoClub time={time} />
-
       {erro && <Aviso>{erro}</Aviso>}
 
-      <section className="border-borda bg-superficie flex flex-col gap-5 rounded-2xl border p-5 sm:p-6">
+      <section className="border-borda-suave bg-superficie flex flex-col gap-5 rounded-3xl border p-6 shadow-sm sm:p-8">
         <header className="flex flex-col gap-1">
           <h2 className="font-display text-base font-semibold">
             Convidar alguém
@@ -202,28 +199,25 @@ export function PainelClub({ time }: { time: MeuTime }) {
         ele chamou —, e a diferença cabe numa marca ao lado do nome.
       */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-texto-2 text-sm font-semibold">
+        <h2 className="text-texto-3 text-[11px] font-semibold tracking-[0.14em] uppercase">
           Seu time
           {pessoas.length > 0 && (
-            <span className="text-texto-3 font-normal tabular-nums">
-              {" "}
-              ({pessoas.length})
-            </span>
+            <span className="tabular-nums"> · {pessoas.length}</span>
           )}
         </h2>
 
         {pessoas.length === 0 ? (
-          <p className="border-borda bg-superficie text-texto-2 rounded-2xl border border-dashed p-6 text-center text-sm">
+          <p className="border-borda bg-superficie text-texto-2 rounded-3xl border border-dashed p-8 text-center text-sm">
             Ninguém no time ainda. Convide a primeira pessoa acima — ela passa a
             ver todo o conteúdo pela sua participação.
           </p>
         ) : (
-          <ul className="border-borda divide-borda bg-superficie divide-y overflow-hidden rounded-2xl border">
+          <ul className="border-borda-suave divide-borda-suave bg-superficie divide-y overflow-hidden rounded-3xl border shadow-sm">
             {pessoas.map((pessoa) =>
               pessoa.tipo === "membro" ? (
                 <li
                   key={`membro-${pessoa.dados.id}`}
-                  className="flex items-center gap-3 px-4 py-3 sm:px-5"
+                  className="hover:bg-superficie-2/60 ease-suave flex items-center gap-3 px-5 py-4 transition-colors sm:px-6"
                 >
                   {pessoa.dados.avatar ? (
                     <Image
@@ -231,11 +225,11 @@ export function PainelClub({ time }: { time: MeuTime }) {
                       alt=""
                       width={40}
                       height={40}
-                      className="h-10 w-10 shrink-0 rounded-full object-cover"
+                      className="ring-borda-suave h-10 w-10 shrink-0 rounded-full object-cover ring-1"
                       unoptimized
                     />
                   ) : (
-                    <span className="bg-fundo-2 text-texto-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                    <span className="bg-superficie-2 text-texto-2 ring-borda-suave flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-1">
                       {pessoa.dados.nome.slice(0, 1).toUpperCase()}
                     </span>
                   )}
@@ -269,7 +263,7 @@ export function PainelClub({ time }: { time: MeuTime }) {
               ) : (
                 <li
                   key={`convite-${pessoa.dados.id}`}
-                  className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5"
+                  className="hover:bg-superficie-2/60 ease-suave flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-4 transition-colors sm:px-6"
                 >
                   {/*
                     Contorno tracejado, e não um avatar cheio: o lugar está

@@ -4,6 +4,7 @@ import { obterEstatisticasDoTime, obterMeuTime } from "@/lib/queries";
 import { FAIXA } from "@/lib/ui";
 import { Abas } from "@/components/abas";
 import { FiltroPeriodo } from "@/components/filtro-periodo";
+import { CabecalhoClub } from "@/components/club/cabecalho";
 import { PainelClub } from "@/components/club/painel";
 import { EstatisticasDoClub } from "@/components/club/estatisticas";
 
@@ -88,16 +89,13 @@ export default async function PaginaClub({
     <div
       className={`${FAIXA} mx-auto flex max-w-5xl flex-col gap-6 py-8 sm:gap-8 sm:py-10`}
     >
-      <header className="flex flex-col gap-1.5">
-        <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
-          Digital Club
-        </h1>
-        <p className="text-texto-3 text-sm">
-          {ativa === "estatisticas"
-            ? "Como o seu time está usando a plataforma."
-            : "Quem está no seu time vê todo o conteúdo pela sua participação."}
-        </p>
-      </header>
+      {/*
+        O cabeçalho é o mesmo nas duas abas, e de propósito: o estado da
+        participação governa tudo que vem depois. Nas estatísticas ele explica
+        por que os números podem ter parado; no time, por que os convites estão
+        pausados.
+      */}
+      <CabecalhoClub time={time} />
 
       <Abas base="/club" atual={ativa} itens={ABAS} />
 

@@ -42,7 +42,10 @@ export function EstatisticasDoClub({ dados }: { dados: EstatisticasDoTime }) {
   return (
     <div className="flex flex-col gap-6">
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Cartao rotulo="Horas assistidas" valor={duracao(t.segundosAssistidos, "0 min")} />
+        <Cartao
+          rotulo="Horas assistidas"
+          valor={duracao(t.segundosAssistidos, "0 min")}
+        />
         <Cartao rotulo="Vídeos concluídos" valor={String(t.videosConcluidos)} />
         <Cartao
           rotulo="Cursos finalizados"
@@ -56,7 +59,7 @@ export function EstatisticasDoClub({ dados }: { dados: EstatisticasDoTime }) {
       </section>
 
       {semAtividade ? (
-        <p className="border-borda bg-superficie text-texto-2 rounded-2xl border border-dashed p-6 text-center text-sm">
+        <p className="border-borda bg-superficie text-texto-2 rounded-3xl border border-dashed p-8 text-center text-sm">
           Ninguém do time assistiu nada neste período. Troque o intervalo acima
           para olhar outra janela.
         </p>
@@ -75,11 +78,11 @@ export function EstatisticasDoClub({ dados }: { dados: EstatisticasDoTime }) {
                       alt=""
                       width={36}
                       height={36}
-                      className="h-9 w-9 shrink-0 rounded-full object-cover"
+                      className="ring-borda-suave h-9 w-9 shrink-0 rounded-full object-cover ring-1"
                       unoptimized
                     />
                   ) : (
-                    <span className="bg-fundo-2 text-texto-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                    <span className="bg-superficie-2 text-texto-2 ring-borda-suave flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-1">
                       {m.nome.slice(0, 1).toUpperCase()}
                     </span>
                   )}
@@ -167,11 +170,14 @@ function Cartao({
   nota?: string;
 }) {
   return (
-    <div className="border-borda bg-superficie flex flex-col gap-0.5 rounded-2xl border p-4">
-      <span className="font-display text-texto text-xl font-semibold tabular-nums">
+    <div className="border-borda-suave bg-superficie flex flex-col gap-0.5 rounded-2xl border p-5 shadow-sm">
+      <span className="font-display text-texto text-2xl font-semibold tracking-tight tabular-nums">
         {valor}
       </span>
-      <span className="text-texto-3 text-xs">{rotulo}</span>
+      {/* Micro-caps, como os rótulos do cabeçalho: o número lidera, o nome apoia. */}
+      <span className="text-texto-3 text-[11px] font-semibold tracking-[0.12em] uppercase">
+        {rotulo}
+      </span>
       {nota && <span className="text-texto-3 text-[11px] italic">{nota}</span>}
     </div>
   );
@@ -185,7 +191,7 @@ function Bloco({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-borda bg-superficie flex flex-col gap-4 rounded-2xl border p-5 sm:p-6">
+    <section className="border-borda-suave bg-superficie flex flex-col gap-4 rounded-3xl border p-6 shadow-sm sm:p-8">
       <h2 className="font-display text-base font-semibold">{titulo}</h2>
       {children}
     </section>
