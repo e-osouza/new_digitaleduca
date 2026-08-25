@@ -50,40 +50,105 @@ export function SituacaoDoClub({ time }: { time: MeuTime }) {
     );
   }
 
+  const largura =
+    time.limite > 0
+      ? Math.min(100, Math.round((time.vagasUsadas / time.limite) * 100))
+      : 0;
+
   return (
     <section
-      className={`flex flex-col gap-2 rounded-2xl border p-5 sm:p-6 ${
+      className={`flex flex-col gap-5 rounded-2xl border p-5 sm:p-6 ${
         acabando
           ? "border-alerta/40 bg-alerta/10"
           : "border-borda bg-superficie"
       }`}
     >
-      <h2 className="font-display text-base font-semibold">
-        Club ativo
-        {dias !== null && (
-          <span className="text-texto-3 ml-2 text-sm font-normal">
-            {dias === 0
-              ? "· último dia"
-              : dias === 1
-                ? "· falta 1 dia"
-                : `· faltam ${dias} dias`}
-          </span>
-        )}
-      </h2>
+      {/*
+        Situação e vagas num bloco só.
+        
+        Eram dois cartões da mesma altura, um sobre o outro, e a tela virava
+        uma pilha em que nada liderava. São a mesma pergunta em duas metades —
+        "meu Club está de pé, e quanto dele já usei" —, então respondem juntas.
+      */}
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 className="font-display flex flex-wrap items-center gap-x-2 text-base font-semibold">
+            Club ativo
+            {dias !== null && (
+              <span className="text-texto-3 text-sm font-normal">
+                {dias === 0
+                  ? "· último dia"
+                  : dias === 1
+                    ? "· falta 1 dia"
+                    : `· faltam ${dias} dias`}
+              </span>
+            )}
+          </h2>
 
-      <p className="text-texto-2 text-sm">
-        {fim ? (
-          <>
-            Seu time vê todo o conteúdo até{" "}
-            <strong className="text-texto font-semibold">
-              {data.format(new Date(fim))}
-            </strong>
-            .
-          </>
-        ) : (
-          "Seu time vê todo o conteúdo enquanto sua participação estiver ativa."
-        )}
-      </p>
+          <p className="text-texto-2 text-sm">
+            {fim ? (
+              <>
+                Seu time vê todo o conteúdo até{" "}
+                <strong className="text-texto font-semibold">
+                  {data.format(new Date(fim))}
+                </strong>
+                .
+              </>
+            ) : (
+              "Seu time vê todo o conteúdo enquanto sua participação estiver ativa."
+            )}
+          </p>
+        </div>
+
+        <p className="text-texto-2 shrink-0 text-sm tabular-nums">
+          <strong className="text-texto font-semibold">
+            {time.vagasUsadas}
+          </strong>{" "}
+          de {time.limite} vagas
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div
+          className="bg-superficie-2 h-2 overflow-hidden rounded-full"
+          role="img"
+          aria-label={`${time.vagasUsadas} de ${time.limite} vagas em uso`}
+        >
+          <div
+            className="bg-acento-claro ease-suave h-full rounded-full transition-[width] duration-500"
+            style={{ width: `${largura}%` }}
+          />
+        </div>
+
+        {/*
+          Os três números viraram legenda da barra, e não três caixas grandes.
+          Eram o mesmo fato dito pela terceira vez — depois do "2 de 10" e da
+          própria barra —, e o tamanho que tinham dava a eles um peso que a
+          informação não tem.
+        */}
+        <p className="text-texto-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
+          <span>
+            <strong className="text-texto-2 font-semibold">
+              {time.membros.length}
+            </strong>{" "}
+            no time
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>
+            <strong className="text-texto-2 font-semibold">
+              {time.convites.length}
+            </strong>{" "}
+            aguardando
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>
+            <strong className="text-texto-2 font-semibold">
+              {time.vagasRestantes}
+            </strong>{" "}
+            {time.vagasRestantes === 1 ? "livre" : "livres"}
+          </span>
+        </p>
+      </div>
 
       {acabando && (
         <p className="text-texto-2 text-sm">

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo, Nota } from "@/components/campo";
 import { SituacaoDoClub } from "@/components/club/situacao";
-import { Vagas } from "@/components/club/vagas";
 import type { MeuTime } from "@/types/api";
 
 const dataCurta = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
@@ -25,12 +24,22 @@ export function PainelClub({ time }: { time: MeuTime }) {
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [ocupado, setOcupado] = useState<string | null>(null);
-  const [linkNovo, setLinkNovo] = useState<{ nome: string; url: string } | null>(
-    null,
-  );
+  const [linkNovo, setLinkNovo] = useState<{
+    nome: string;
+    url: string;
+  } | null>(null);
 
   const semVaga = time.vagasRestantes <= 0;
   const podeConvidar = time.ativo && !semVaga;
+
+  /*
+   * Quem já entrou primeiro, quem ainda não aceitou depois. É a ordem em que a
+   * pessoa pensa no próprio time — o que está de pé, e o que está pendurado.
+   */
+  const pessoas = [
+    ...time.membros.map((dados) => ({ tipo: "membro" as const, dados })),
+    ...time.convites.map((dados) => ({ tipo: "convite" as const, dados })),
+  ];
 
   async function convidar(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -103,7 +112,6 @@ export function PainelClub({ time }: { time: MeuTime }) {
   return (
     <div className="flex flex-col gap-6">
       <SituacaoDoClub time={time} />
-      <Vagas time={time} />
 
       {erro && <Aviso>{erro}</Aviso>}
 
@@ -185,122 +193,152 @@ export function PainelClub({ time }: { time: MeuTime }) {
         )}
       </section>
 
+      {/*
+        Uma lista só, membros e convidados juntos.
+
+        Eram duas seções irmãs, com títulos do mesmo tamanho, e a segunda só
+        existia por causa de um detalhe de estado: quem foi convidado ainda não
+        clicou no link. Para quem monta o time é a mesma lista — as pessoas que
+        ele chamou —, e a diferença cabe numa marca ao lado do nome.
+      */}
       <section className="flex flex-col gap-3">
         <h2 className="text-texto-2 text-sm font-semibold">
-          No time ({time.membros.length})
+          Seu time
+          {pessoas.length > 0 && (
+            <span className="text-texto-3 font-normal tabular-nums">
+              {" "}
+              ({pessoas.length})
+            </span>
+          )}
         </h2>
 
-        {time.membros.length === 0 ? (
+        {pessoas.length === 0 ? (
           <p className="border-borda bg-superficie text-texto-2 rounded-2xl border border-dashed p-6 text-center text-sm">
             Ninguém no time ainda. Convide a primeira pessoa acima — ela passa a
             ver todo o conteúdo pela sua participação.
           </p>
         ) : (
           <ul className="border-borda divide-borda bg-superficie divide-y overflow-hidden rounded-2xl border">
-            {time.membros.map((membro) => (
-              <li
-                key={membro.id}
-                className="flex items-center gap-3 px-4 py-3 sm:px-5"
-              >
-                {membro.avatar ? (
-                  <Image
-                    src={membro.avatar}
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 shrink-0 rounded-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="bg-fundo-2 text-texto-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
-                    {membro.nome.slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-texto truncate text-sm font-medium">
-                    {membro.nome}
-                  </span>
-                  <span className="text-texto-3 truncate text-xs">
-                    {membro.email}
-                  </span>
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    apagar(
-                      `/api/club/time/${membro.id}`,
-                      `membro-${membro.id}`,
-                      `Tirar ${membro.nome} do time?\n\nA conta continua existindo — a pessoa só perde o acesso que vinha do seu Club.`,
-                    )
-                  }
-                  disabled={ocupado === `membro-${membro.id}`}
-                  className="text-texto-3 hover:text-alerta shrink-0 text-xs font-semibold transition-colors disabled:opacity-50"
+            {pessoas.map((pessoa) =>
+              pessoa.tipo === "membro" ? (
+                <li
+                  key={`membro-${pessoa.dados.id}`}
+                  className="flex items-center gap-3 px-4 py-3 sm:px-5"
                 >
-                  {ocupado === `membro-${membro.id}` ? "Tirando…" : "Tirar"}
-                </button>
-              </li>
-            ))}
+                  {pessoa.dados.avatar ? (
+                    <Image
+                      src={pessoa.dados.avatar}
+                      alt=""
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 shrink-0 rounded-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="bg-fundo-2 text-texto-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                      {pessoa.dados.nome.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-texto truncate text-sm font-medium">
+                      {pessoa.dados.nome}
+                    </span>
+                    <span className="text-texto-3 truncate text-xs">
+                      {pessoa.dados.email}
+                    </span>
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      apagar(
+                        `/api/club/time/${pessoa.dados.id}`,
+                        `membro-${pessoa.dados.id}`,
+                        `Tirar ${pessoa.dados.nome} do time?\n\nA conta continua existindo — a pessoa só perde o acesso que vinha do seu Club.`,
+                      )
+                    }
+                    disabled={ocupado === `membro-${pessoa.dados.id}`}
+                    className="text-texto-3 hover:text-alerta shrink-0 text-xs font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {ocupado === `membro-${pessoa.dados.id}`
+                      ? "Tirando…"
+                      : "Tirar"}
+                  </button>
+                </li>
+              ) : (
+                <li
+                  key={`convite-${pessoa.dados.id}`}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5"
+                >
+                  {/*
+                    Contorno tracejado, e não um avatar cheio: o lugar está
+                    reservado, a pessoa ainda não chegou. É a mesma linguagem
+                    das molduras tracejadas dos estados vazios da plataforma.
+                  */}
+                  <span className="border-borda text-texto-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed text-sm font-bold">
+                    {pessoa.dados.nome.slice(0, 1).toUpperCase()}
+                  </span>
+
+                  {/*
+                    `basis-48`: abaixo disso o nome não cabe, e a linha quebra
+                    em vez de espremê-lo. Sem isso, o `flex-1` encolhia até
+                    "B…" no celular, e o par de botões continuava lado a lado.
+                  */}
+                  <span className="flex min-w-0 flex-1 basis-48 flex-col">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="text-texto-2 truncate text-sm font-medium">
+                        {pessoa.dados.nome}
+                      </span>
+                      <span className="border-borda text-texto-3 shrink-0 rounded-full border px-2 py-0.5 text-[11px] leading-tight font-semibold">
+                        Aguardando
+                      </span>
+                    </span>
+                    <span className="text-texto-3 truncate text-xs">
+                      {pessoa.dados.email} · expira em{" "}
+                      {dataCurta.format(new Date(pessoa.dados.expiraEm))}
+                    </span>
+                  </span>
+
+                  <span className="ml-auto flex shrink-0 items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copiar(
+                          `${window.location.origin}/convite/${pessoa.dados.token}`,
+                          `copia-${pessoa.dados.id}`,
+                        )
+                      }
+                      className="border-borda text-texto-2 hover:text-texto rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
+                    >
+                      {ocupado === `copia-${pessoa.dados.id}`
+                        ? "Copiado"
+                        : "Copiar link"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        apagar(
+                          `/api/club/time/convites/${pessoa.dados.id}`,
+                          `convite-${pessoa.dados.id}`,
+                          `Cancelar o convite de ${pessoa.dados.nome}?`,
+                        )
+                      }
+                      disabled={ocupado === `convite-${pessoa.dados.id}`}
+                      className="text-texto-3 hover:text-alerta text-xs font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {ocupado === `convite-${pessoa.dados.id}`
+                        ? "Cancelando…"
+                        : "Cancelar"}
+                    </button>
+                  </span>
+                </li>
+              ),
+            )}
           </ul>
         )}
       </section>
-
-      {time.convites.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-texto-2 text-sm font-semibold">
-            Aguardando aceite ({time.convites.length})
-          </h2>
-          <ul className="border-borda divide-borda divide-y overflow-hidden rounded-2xl border border-dashed">
-            {time.convites.map((convite) => (
-              <li
-                key={convite.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5"
-              >
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-texto truncate text-sm font-medium">
-                    {convite.nome}
-                  </span>
-                  <span className="text-texto-3 truncate text-xs">
-                    {convite.email} · expira em{" "}
-                    {dataCurta.format(new Date(convite.expiraEm))}
-                  </span>
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    copiar(
-                      `${window.location.origin}/convite/${convite.token}`,
-                      `copia-${convite.id}`,
-                    )
-                  }
-                  className="border-borda text-texto-2 hover:text-texto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
-                >
-                  {ocupado === `copia-${convite.id}` ? "Copiado" : "Copiar link"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    apagar(
-                      `/api/club/time/convites/${convite.id}`,
-                      `convite-${convite.id}`,
-                      `Cancelar o convite de ${convite.nome}?`,
-                    )
-                  }
-                  disabled={ocupado === `convite-${convite.id}`}
-                  className="text-texto-3 hover:text-alerta shrink-0 text-xs font-semibold transition-colors disabled:opacity-50"
-                >
-                  {ocupado === `convite-${convite.id}`
-                    ? "Cancelando…"
-                    : "Cancelar"}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }
