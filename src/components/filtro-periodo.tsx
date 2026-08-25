@@ -80,10 +80,20 @@ export function FiltroPeriodo({
   de,
   ate,
   todo,
+  base = "/estatisticas",
+  extras,
 }: {
   de?: string;
   ate?: string;
   todo?: boolean;
+  /** Rota que recebe o período. O Digital Club usa a mesma peça em /club. */
+  base?: string;
+  /**
+   * Parâmetros que precisam sobreviver à troca de período — em /club, a aba
+   * aberta. Sem isso, escolher um intervalo jogaria o dono de volta para a
+   * primeira aba, justamente quando ele está olhando os números.
+   */
+  extras?: Record<string, string>;
 }) {
   const router = useRouter();
   const hoje = useMemo(() => {
@@ -151,7 +161,7 @@ export function FiltroPeriodo({
   }
 
   function navegar(d: Date | null, t: Date | null) {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(extras);
     if (d && t) {
       params.set("de", ymd(d));
       params.set("ate", ymd(t));
@@ -159,7 +169,7 @@ export function FiltroPeriodo({
       // sem intervalo = "Todo o período" explícito (o padrão da URL é 30 dias)
       params.set("todo", "1");
     }
-    router.push(`/estatisticas?${params.toString()}`);
+    router.push(`${base}?${params.toString()}`);
     setAberto(false);
   }
 

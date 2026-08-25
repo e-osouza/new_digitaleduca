@@ -240,6 +240,45 @@ export interface MeuTime {
   vagasRestantes: number;
 }
 
+/** Uma pessoa do time na visão de engajamento — `GET /club/estatisticas`. */
+export interface MembroNoRelatorio {
+  id: number;
+  nome: string;
+  email: string;
+  avatar: string | null;
+  segundos: number;
+  videosConcluidos: number;
+  cursosFinalizados: number;
+  diasAtivos: number;
+  ultimaAtividade: string | null;
+}
+
+/**
+ * `GET /club/estatisticas` — como o time usa a plataforma.
+ *
+ * O consumo (tipo, categoria, instrutor) vem SOMADO do time; por pessoa vem só
+ * engajamento. É o recorte que responde "quem está usando" sem expor o
+ * histórico individual de cada um.
+ */
+export interface EstatisticasDoTime {
+  ativo: boolean;
+  totalMembros: number;
+  totais: {
+    segundosAssistidos: number;
+    videosConcluidos: number;
+    cursosFinalizados: number;
+    /** Dias em que ALGUÉM do time estudou — não é média por pessoa. */
+    diasComAtividade: number;
+    membrosAtivos: number;
+  };
+  porTipo: { tipo: TipoConteudo; videos: number; concluidos: number; segundos: number }[];
+  porCategoria: { nome: string; videos: number; segundos: number }[];
+  porInstrutor: { nome: string; avatar: string | null; segundos: number }[];
+  porMes: { mes: string; videos: number; diasAtivos: number }[];
+  diaSemanaPico: { dia: number; videos: number } | null;
+  porMembro: MembroNoRelatorio[];
+}
+
 /** `GET /club/convites/:token` — dados públicos da tela de aceite. */
 export interface ConvitePublico {
   nome: string;

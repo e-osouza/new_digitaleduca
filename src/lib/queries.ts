@@ -14,6 +14,7 @@ import type {
   ConvitePublico,
   Envelope,
   EstatisticasDetalhadas,
+  EstatisticasDoTime,
   EstatisticasUsuario,
   Instrutor,
   Interesse,
@@ -752,6 +753,19 @@ export async function obterMeuTime(): Promise<MeuTime | null> {
     if (erro instanceof ApiError) return null;
     throw erro;
   }
+}
+
+/**
+ * Como o time do Club está usando a plataforma.
+ *
+ * Mesma tolerância do `obterMeuTime`: qualquer erro vira `null` e a aba some,
+ * em vez de derrubar a página do Club inteira.
+ */
+export async function obterEstatisticasDoTime(de?: string, ate?: string) {
+  return apiOpcional<EstatisticasDoTime>(
+    `/club/estatisticas${query({ de, ate })}`,
+    { autenticado: true, revalidar: false },
+  );
 }
 
 /**
