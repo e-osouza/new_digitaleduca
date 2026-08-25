@@ -184,13 +184,17 @@ const GRUPOS: GrupoNav[] = [
           conta, e não navegar pelo acervo.
         */
         href: "/club",
-        rotulo: "Club",
+        rotulo: "Digital Club",
         icone: (
+          /*
+            Diamante lapidado, não losango: o contorno mais a cintura e o V das
+            facetas são o que faz a forma ser lida como pedra. Só o losango
+            viraria naipe de baralho neste tamanho.
+          */
           <>
-            <circle cx="7.5" cy="7" r="2.75" />
-            <path d="M2.5 16.5c0-2.8 2.2-4.6 5-4.6s5 1.8 5 4.6" />
-            <path d="M13.2 5.1a2.75 2.75 0 0 1 0 5.3" />
-            <path d="M14.7 12.5c1.8.6 3 2 3 4" />
+            <path d="M6.5 3h7l3.5 4.5L10 17.3 3 7.5z" />
+            <path d="M3 7.5h14" />
+            <path d="M6.5 3 10 7.5 13.5 3" />
           </>
         ),
       },

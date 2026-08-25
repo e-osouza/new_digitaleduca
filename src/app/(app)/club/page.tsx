@@ -4,7 +4,7 @@ import { obterMeuTime } from "@/lib/queries";
 import { FAIXA } from "@/lib/ui";
 import { PainelClub } from "@/components/club/painel";
 
-export const metadata: Metadata = { title: "Club" };
+export const metadata: Metadata = { title: "Digital Club" };
 
 /**
  * Painel do dono do Club.
@@ -21,10 +21,10 @@ export default async function PaginaClub() {
     return (
       <div className={`${FAIXA} mx-auto flex max-w-2xl flex-col gap-5 py-10`}>
         <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-          Club
+          Digital Club
         </h1>
         <p className="text-texto-2 text-sm">
-          O Club é para quem leva a equipe junto: você convida pessoas do seu
+          O Digital Club é para quem leva a equipe junto: você convida pessoas do seu
           time e todas passam a ver o conteúdo da plataforma pela sua
           participação. Sua conta não faz parte do Club hoje.
         </p>
@@ -42,7 +42,7 @@ export default async function PaginaClub() {
     <div className={`${FAIXA} mx-auto flex max-w-3xl flex-col gap-6 py-8 sm:gap-8 sm:py-10`}>
       <header className="flex flex-col gap-1.5">
         <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
-          Club
+          Digital Club
         </h1>
         <p className="text-texto-3 text-sm">
           Quem está no seu time vê todo o conteúdo pela sua participação.
