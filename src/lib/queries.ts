@@ -1,38 +1,40 @@
 import "server-only";
 import { cache } from "react";
-import { api, apiOpcional } from "@/lib/api";
+import { api, apiOpcional, ApiError } from "@/lib/api";
 import type {
   Assinatura,
   AvaliacaoMedia,
   AvaliacaoUsuario,
   Categoria,
-  Subcategoria,
   CategoriaComConteudos,
   Conteudo,
-  Interesse,
-  Negocio,
+  ConteudoCatalogo,
   ConteudoEmAndamento,
   ConteudoResumo,
-  Salvo,
-  PerfilInstrutor,
-  Tag,
-  TagDetalhe,
+  ConvitePublico,
   Envelope,
+  EstatisticasDetalhadas,
+  EstatisticasUsuario,
   Instrutor,
+  Interesse,
+  Lista,
+  ListaDetalhe,
   ListaPaginada,
   MeResponse,
+  MeuTime,
+  Negocio,
+  PerfilInstrutor,
   Plano,
-  Propaganda,
   ProgressoVideo,
+  Propaganda,
+  Salvo,
+  Subcategoria,
+  Tag,
+  TagDetalhe,
   TipoConteudo,
   TipoDisponivel,
   Trilha,
   TrilhaDetalhe,
-  Lista,
-  ListaDetalhe,
-  EstatisticasUsuario,
-  EstatisticasDetalhadas,
-  ConteudoCatalogo,
   Usuario,
   Video,
   VimeoLink,
@@ -724,4 +726,48 @@ export function normalizarMe(resposta: MeResponse | null): {
   const ehCortesia = metodo === "CORTESIA" || metodo === "CORTERSIA";
 
   return { usuario, assinatura, temAssinaturaAtiva, ehCortesia };
+}
+
+/* ------------------------------ club ------------------------------ */
+
+/**
+ * O time do dono do Club.
+ *
+ * `null` para QUALQUER erro da API, de propósito. O caso normal é 403 — a API
+ * responde isso tanto para quem não tem o papel quanto para quem está com o
+ * Club vencido —, e nos dois a aba simplesmente não é o caso da pessoa.
+ *
+ * Mas engolir o resto também é deliberado: esta chamada roda na página de
+ * Configurações inteira, e uma API sem o módulo do Club responderia 404,
+ * derrubando perfil, empresa e conta junto. Nenhum erro aqui justifica tirar
+ * do ar as outras três abas — na dúvida, a pessoa não tem time.
+ */
+export async function obterMeuTime(): Promise<MeuTime | null> {
+  try {
+    return await api<MeuTime>("/club/time", {
+      autenticado: true,
+      revalidar: false,
+    });
+  } catch (erro) {
+    if (erro instanceof ApiError) return null;
+    throw erro;
+  }
+}
+
+/**
+ * Dados públicos de um convite. Sem autenticação: quem abre o link ainda
+ * pode nem ter conta.
+ */
+export async function obterConvite(
+  token: string,
+): Promise<ConvitePublico | null> {
+  try {
+    return await api<ConvitePublico>(
+      `/club/convites/${encodeURIComponent(token)}`,
+      { revalidar: false },
+    );
+  } catch (erro) {
+    if (erro instanceof ApiError && erro.naoEncontrado) return null;
+    throw erro;
+  }
 }

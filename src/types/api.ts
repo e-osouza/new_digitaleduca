@@ -14,7 +14,7 @@
  */
 export type TipoConteudo = "PALESTRA" | "PODCAST" | "AULA" | "CURSO";
 export type GratuitoTipo = "NENHUM" | "PERMANENTE" | "TEMPORARIO";
-export type Role = "USER" | "SUPERADMIN" | "CORTESIA";
+export type Role = "USER" | "SUPERADMIN" | "CORTESIA" | "CLUB";
 export type IntervaloPlano = "day" | "week" | "month" | "year";
 
 /** A API usa três formatos de resposta diferentes; ver docs/API.md. */
@@ -193,6 +193,51 @@ export interface Usuario {
   objetivoPlataforma?: string | null;
   formatoAprendizado?: string | null;
   aceitaNotificacoes?: boolean;
+}
+
+/** Alguém já dentro do time — `GET /club/time`. */
+export interface MembroDoTime {
+  id: number;
+  nome: string;
+  email: string;
+  avatar: string | null;
+  emailVerified: boolean;
+  createdAt: string;
+}
+
+/** Convite ainda em aberto. Ocupa vaga do mesmo jeito que um membro. */
+export interface ConviteDoTime {
+  id: number;
+  nome: string;
+  email: string;
+  token: string;
+  expiraEm: string;
+  /**
+   * Falso quando o e-mail não pôde ser enviado. A tela então mostra o link
+   * para o dono entregar por fora — o convite existe de qualquer jeito.
+   */
+  emailEnviado: boolean;
+  createdAt: string;
+}
+
+/** `GET /club/time` — o painel do dono do Club. */
+export interface MeuTime {
+  limite: number;
+  membros: MembroDoTime[];
+  convites: ConviteDoTime[];
+  vagasUsadas: number;
+  vagasRestantes: number;
+}
+
+/** `GET /club/convites/:token` — dados públicos da tela de aceite. */
+export interface ConvitePublico {
+  nome: string;
+  email: string;
+  convidadoPor: string;
+  expiraEm: string;
+  /** Quando falso, o e-mail já tem conta e o aceite não pede senha. */
+  precisaCriarConta: boolean;
+  situacao: "ABERTO" | "ACEITO" | "CANCELADO" | "EXPIRADO" | "CLUB_ENCERRADO";
 }
 
 /**

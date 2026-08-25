@@ -15,12 +15,15 @@ import { FormularioSeguranca } from "@/components/formulario-seguranca";
 import { SeletorTema } from "@/components/seletor-tema";
 import { Selo } from "@/components/selo";
 import { ExcluirConta } from "@/components/excluir-conta";
+import { TimeDoClub } from "@/components/time-do-club";
+import { obterMeuTime } from "@/lib/queries";
 
 export const metadata: Metadata = { title: "Configurações" };
 
 const ABAS = [
   { chave: "perfil", rotulo: "Perfil" },
   { chave: "empresa", rotulo: "Empresa" },
+  { chave: "time", rotulo: "Time" },
   { chave: "conta", rotulo: "Conta" },
 ] as const;
 
@@ -29,6 +32,7 @@ type ChaveAba = (typeof ABAS)[number]["chave"];
 const DESCRICOES: Record<ChaveAba, string> = {
   perfil: "Seus dados e o que você quer aprender.",
   empresa: "O contexto do seu negócio, usado nas recomendações.",
+  time: "Quem da sua equipe usa a plataforma pelo seu Club.",
   conta: "Assinatura, aparência, senha e avisos.",
 };
 
@@ -38,8 +42,20 @@ export default async function PaginaConta({
   searchParams: Promise<{ aba?: string }>;
 }) {
   const { aba } = await searchParams;
-  const ativa: ChaveAba =
-    ABAS.find((item) => item.chave === aba)?.chave ?? "perfil";
+
+  /*
+    A aba Time só existe para quem tem time: `obterMeuTime` devolve null tanto
+    para quem não é do Club quanto para quem está com o Club vencido. Buscar
+    aqui, e não dentro da aba, é o que permite ESCONDER a aba — oferecer um
+    caminho que termina em "isto não é para você" seria pior do que não
+    oferecer.
+  */
+  const time = await obterMeuTime();
+
+  const abasVisiveis = ABAS.filter((item) => item.chave !== "time" || time);
+
+  const escolhida = abasVisiveis.find((item) => item.chave === aba)?.chave;
+  const ativa: ChaveAba = escolhida ?? "perfil";
 
   return (
     <div className={`${FAIXA} mx-auto flex max-w-3xl flex-col gap-8 py-8 sm:py-10`}>
@@ -50,12 +66,13 @@ export default async function PaginaConta({
         <p className="text-texto-3 text-sm">{DESCRICOES[ativa]}</p>
       </header>
 
-      <Abas base="/conta" atual={ativa} itens={ABAS} />
+      <Abas base="/conta" atual={ativa} itens={abasVisiveis} />
 
       {/*
         Cada aba é um componente de servidor que busca só os seus dados: trocar
         de aba não paga pelas chamadas das outras duas.
       */}
+      {ativa === "time" && time && <TimeDoClub time={time} />}
       {ativa === "perfil" && <AbaPerfil />}
       {ativa === "empresa" && <AbaEmpresa />}
       {ativa === "conta" && <AbaConta />}
