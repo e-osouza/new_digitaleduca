@@ -134,3 +134,52 @@ export function cpfValido(valor: string) {
 
   return digito(9) === Number(d[9]) && digito(10) === Number(d[10]);
 }
+
+/** Quanto o plano custa por mês e o que ele poupa frente ao mensal. */
+export type Comparacao = {
+  /** Valor mensal equivalente — é a régua que deixa dois prazos comparáveis. */
+  porMes: number;
+  /** Economia em um ano contra o plano mensal. Null quando não há o que comparar. */
+  economia: { valor: number; percentual: number } | null;
+};
+
+/** Quantos meses cabem em cada intervalo de cobrança. */
+const MESES_POR_INTERVALO: Record<string, number> = {
+  day: 1 / 30,
+  week: 1 / 4,
+  month: 1,
+  year: 12,
+};
+
+/**
+ * Põe dois planos de prazos diferentes na mesma régua.
+ *
+ * A tela mostrava "R$ 86,70 por mês" ao lado de "R$ 867,00 por ano" e deixava
+ * a conta para quem estava decidindo. São doze meses a R$ 86,70 — R$ 1.040,40
+ * — contra R$ 867,00: uma diferença de R$ 173,40 que ninguém ia calcular de
+ * cabeça, e que é o argumento inteiro do plano anual.
+ *
+ * A referência é o plano mensal do próprio catálogo, e não um número escrito
+ * aqui: mudar o preço no admin passa a mudar a economia exibida sozinho.
+ */
+export function compararComMensal(
+  plano: Plano,
+  mensal: Plano | undefined,
+): Comparacao {
+  const meses = MESES_POR_INTERVALO[plano.intervalo] ?? 1;
+  const porMes = meses > 0 ? plano.preco / meses : plano.preco;
+
+  /* Sem referência, ou comparando o mensal consigo mesmo, não há economia. */
+  if (!mensal || mensal.id === plano.id || meses <= 1) {
+    return { porMes, economia: null };
+  }
+
+  const custoNoMensal = mensal.preco * meses;
+  const valor = Math.round((custoNoMensal - plano.preco) * 100) / 100;
+  if (valor <= 0) return { porMes, economia: null };
+
+  return {
+    porMes,
+    economia: { valor, percentual: Math.round((valor / custoNoMensal) * 100) },
+  };
+}

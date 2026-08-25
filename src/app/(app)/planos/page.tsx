@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { listarPlanos, normalizarMe, obterMe } from "@/lib/queries";
 import { formatarPreco } from "@/lib/format";
+import { compararComMensal } from "@/lib/assinatura";
 import { FAIXA } from "@/lib/ui";
 import { Selo } from "@/components/selo";
 import { CheckoutAssinatura } from "@/components/checkout-assinatura";
+import { SituacaoAssinatura } from "@/components/situacao-assinatura";
 
 export const metadata: Metadata = { title: "Planos" };
 
@@ -32,7 +34,7 @@ export default async function PaginaPlanos({
     obterMe(),
     searchParams,
   ]);
-  const { temAssinaturaAtiva, ehCortesia } = normalizarMe(me);
+  const { assinatura, temAssinaturaAtiva, ehCortesia } = normalizarMe(me);
 
   /*
    * `?conteudo=` marca quem foi trazido de um "Assistir" que a API recusou.
@@ -62,20 +64,31 @@ export default async function PaginaPlanos({
     .filter((plano) => plano.preco > 0)
     .sort((a, b) => a.preco - b.preco);
 
+  /* Régua da comparação: o plano mensal mais barato do catálogo. */
+  const mensal = pagos.find((plano) => plano.intervalo === "month");
+
   return (
     <div className={`${FAIXA} mx-auto flex max-w-4xl flex-col gap-8 py-8 sm:py-10`}>
       <header className="flex flex-col gap-1.5 sm:gap-2">
         <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
           Planos
         </h1>
-        <p className="text-texto-3 text-sm">
-          {ehCortesia
-            ? "Você tem acesso de cortesia — todo o acervo já está liberado."
-            : temAssinaturaAtiva
-              ? "Sua assinatura está ativa — você já tem acesso a tudo."
-              : "Libere o acervo completo e os conteúdos novos de cada quinzena."}
-        </p>
+        {/*
+          A frase de apoio agora só fala com quem AINDA não tem acesso. Para
+          quem já tem, a mensagem subiu para o cartão abaixo — uma linha cinza
+          era pouco para reconhecer quem paga, e escondia a data de validade
+          de quem está na cortesia.
+        */}
+        {!temAssinaturaAtiva && !ehCortesia && (
+          <p className="text-texto-3 text-sm">
+            Libere o acervo completo e os conteúdos novos de cada quinzena.
+          </p>
+        )}
       </header>
+
+      {(temAssinaturaAtiva || ehCortesia) && (
+        <SituacaoAssinatura assinatura={assinatura} ehCortesia={ehCortesia} />
+      )}
 
       {veioDeBloqueio && !temAssinaturaAtiva && !ehCortesia && (
         <div className="border-acento/40 bg-acento/10 flex flex-col items-start gap-3 rounded-xl border p-5">
@@ -122,74 +135,171 @@ export default async function PaginaPlanos({
           Nenhum plano disponível no momento.
         </p>
       ) : (
-        <ul className="grid gap-5 sm:grid-cols-2">
-          {pagos.map((plano, indice) => {
-            const destaque = indice === pagos.length - 1 && pagos.length > 1;
+        <>
+          {/*
+            Os benefícios aparecem UMA vez, e não dentro de cada card.
+            Repetidos, diziam que os planos entregam a mesma coisa — o que é
+            verdade — e escondiam justamente onde eles diferem: prazo e preço.
+            Fora dos cards, viram o que são: o que a assinatura dá, em qualquer
+            plano.
+          */}
+          <section className="border-borda-suave bg-superficie/60 flex flex-col gap-4 rounded-2xl border p-5 sm:p-6">
+            <h2 className="text-texto-2 text-xs font-semibold tracking-wider uppercase">
+              Em qualquer plano você tem
+            </h2>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {BENEFICIOS.map((item) => (
+                <li
+                  key={item}
+                  className="text-texto-2 flex items-start gap-2.5 text-sm"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="bg-sucesso/15 text-sucesso mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full"
+                  >
+                    <svg
+                      viewBox="0 0 20 20"
+                      className="h-3 w-3"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m4.5 10.5 3.5 3.5 7.5-8" />
+                    </svg>
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </section>
 
-            return (
-              <li
-                key={plano.id}
-                className={`flex flex-col gap-5 rounded-2xl border p-6 ${
-                  destaque
-                    ? "border-acento/50 bg-superficie"
-                    : "border-borda-suave bg-superficie/60"
-                }`}
-              >
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-acento text-xs font-semibold tracking-wider uppercase">
-                      Plano {plano.nome}
+          <ul className="grid items-start gap-5 sm:grid-cols-2">
+            {pagos.map((plano) => {
+              const { porMes, economia } = compararComMensal(plano, mensal);
+              /* O destaque é o que economiza, não o último da lista. */
+              const destaque = Boolean(economia);
+              const ehMeuPlano =
+                temAssinaturaAtiva &&
+                !ehCortesia &&
+                assinatura?.plano?.trim().toLowerCase() ===
+                  plano.nome.trim().toLowerCase();
+
+              return (
+                <li
+                  key={plano.id}
+                  className={`flex flex-col gap-5 rounded-2xl border p-6 transition-colors ${
+                    ehMeuPlano
+                      ? "border-sucesso/45 bg-sucesso/5"
+                      : destaque
+                        ? "border-acento/50 bg-superficie shadow-sm"
+                        : "border-borda-suave bg-superficie/60"
+                  }`}
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-acento text-xs font-semibold tracking-wider uppercase">
+                        Plano {plano.nome}
+                      </span>
+                      {ehMeuPlano ? (
+                        <Selo variacao="gratis">Seu plano</Selo>
+                      ) : (
+                        economia && (
+                          <Selo variacao="acento">
+                            Economize {economia.percentual}%
+                          </Selo>
+                        )
+                      )}
+                    </div>
+
+                    <span className="font-display text-3xl font-semibold tracking-tight">
+                      {formatarPreco(plano.preco)}
                     </span>
-                    {destaque && <Selo variacao="acento">Melhor valor</Selo>}
+
+                    {/*
+                      A régua comum: todo plano mostra quanto custa POR MÊS.
+                      É o que torna comparável um preço anual e um mensal sem
+                      obrigar ninguém a dividir de cabeça.
+                    */}
+                    <span className="text-texto-3 text-sm">
+                      {INTERVALOS[plano.intervalo] ?? ""}
+                      {economia && (
+                        <>
+                          {" · equivale a "}
+                          <span className="text-texto-2 font-semibold tabular-nums">
+                            {formatarPreco(porMes)}/mês
+                          </span>
+                        </>
+                      )}
+                    </span>
                   </div>
 
-                  <span className="font-display text-3xl font-semibold tracking-tight">
-                    {formatarPreco(plano.preco)}
-                  </span>
-                  <span className="text-texto-3 text-sm">
-                    {INTERVALOS[plano.intervalo] ?? ""}
-                    {plano.permiteParcelamento && plano.maxParcelas > 1
-                      ? ` · em até ${plano.maxParcelas}x`
-                      : ""}
-                  </span>
-                </div>
+                  {/*
+                    Cada plano diz a SUA vantagem. A do anual é o dinheiro; a
+                    do mensal é não prender ninguém — e sem essa linha o card
+                    do mensal ficava vazio ao lado do outro, como se fosse
+                    apenas a opção pior. São escolhas diferentes, não uma boa e
+                    uma ruim.
+                  */}
+                  {!economia && plano.intervalo === "month" && (
+                    <p className="border-borda-suave bg-superficie-2 text-texto-2 rounded-xl border px-4 py-3 text-sm">
+                      <span className="text-texto font-semibold">
+                        Sem compromisso.
+                      </span>{" "}
+                      Cancele quando quiser, direto pelas configurações.
+                    </p>
+                  )}
 
-                {plano.descricao && (
-                  <p className="text-texto-2 text-sm leading-relaxed whitespace-pre-line">
-                    {plano.descricao}
-                  </p>
-                )}
+                  {economia && (
+                    <p className="border-acento/25 bg-acento/5 text-texto-2 rounded-xl border px-4 py-3 text-sm">
+                      <span className="text-texto font-semibold tabular-nums">
+                        {formatarPreco(economia.valor)}
+                      </span>{" "}
+                      a menos que pagar o mensal por {plano.intervalo === "year" ? "doze meses" : "o mesmo período"}.
+                    </p>
+                  )}
 
-                <ul className="flex flex-col gap-2">
-                  {BENEFICIOS.map((item) => (
-                    <li
-                      key={item}
-                      className="text-texto-2 flex items-start gap-2.5 text-sm"
-                    >
-                      <span aria-hidden="true" className="text-acento shrink-0">
-                        ✓
+                  {plano.permiteParcelamento && plano.maxParcelas > 1 && (
+                    <p className="text-texto-3 text-sm">
+                      Em até {plano.maxParcelas}x de{" "}
+                      <span className="tabular-nums">
+                        {formatarPreco(plano.preco / plano.maxParcelas)}
                       </span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                      {plano.percentualDescontoAVista > 0 && (
+                        <>
+                          {" ou "}
+                          <span className="text-texto-2 font-semibold">
+                            {plano.percentualDescontoAVista}% de desconto à vista
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  )}
 
-                {temAssinaturaAtiva || ehCortesia ? (
-                  <p className="text-texto-3 mt-auto text-sm">
-                    {ehCortesia
-                      ? "Seu acesso de cortesia já cobre tudo isto."
-                      : "Você já assina a plataforma."}
-                  </p>
-                ) : (
-                  <CheckoutAssinatura
-                    plano={plano}
-                    destinoAposAssinar={veioDeBloqueio ? destinoVolta : undefined}
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  <div className="mt-auto pt-1">
+                    {temAssinaturaAtiva || ehCortesia ? (
+                      <p className="text-texto-3 text-sm">
+                        {ehMeuPlano
+                          ? "É o plano que você tem hoje."
+                          : ehCortesia
+                            ? "Seu acesso de cortesia já cobre tudo isto."
+                            : "Você já assina a plataforma."}
+                      </p>
+                    ) : (
+                      <CheckoutAssinatura
+                        plano={plano}
+                        destinoAposAssinar={
+                          veioDeBloqueio ? destinoVolta : undefined
+                        }
+                      />
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       {/*
