@@ -46,7 +46,9 @@ function DicaTempo({
     <div className="border-borda-suave bg-superficie rounded-lg border px-3 py-2 text-xs shadow-lg">
       <p className="text-texto font-semibold">{nome}</p>
       <p className="text-texto-3 tabular-nums">
-        {sufixo === "min" ? `${p.value} vídeos` : formatarDuracao(Number(p.value))}
+        {sufixo === "min"
+          ? `${p.value} vídeos`
+          : formatarDuracao(Number(p.value))}
       </p>
     </div>
   );
@@ -54,8 +56,15 @@ function DicaTempo({
 
 /* -------------------------- donut por tipo -------------------------- */
 
-export function DonutTipo({ dados }: { dados: EstatisticasDetalhadas["porTipo"] }) {
-  const data = dados.map((t) => ({ nome: rotuloTipo(t.tipo), segundos: t.segundos }));
+export function DonutTipo({
+  dados,
+}: {
+  dados: EstatisticasDetalhadas["porTipo"];
+}) {
+  const data = dados.map((t) => ({
+    nome: rotuloTipo(t.tipo),
+    segundos: t.segundos,
+  }));
   const total = data.reduce((s, d) => s + d.segundos, 0);
 
   return (
@@ -63,7 +72,8 @@ export function DonutTipo({ dados }: { dados: EstatisticasDetalhadas["porTipo"] 
       <div className="relative h-[180px] w-[180px] shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie isAnimationActive={false}
+            <Pie
+              isAnimationActive={false}
               data={data}
               dataKey="segundos"
               nameKey="nome"
@@ -118,7 +128,13 @@ export function BarrasTempo({
       <BarChart
         data={dados}
         layout="vertical"
-        margin={{ top: 0, right: 16, bottom: 0, left: 0 }}
+        /*
+          `right` reserva a faixa do rótulo de duração, que fica DEPOIS da
+          barra. Com 16px a maior barra — a que sempre encosta na borda —
+          empurrava o próprio valor para fora, e "45 min" quebrava em duas
+          linhas. 64 cabe o pior caso ("1 h 22 min") em 11px.
+        */
+        margin={{ top: 0, right: 64, bottom: 0, left: 0 }}
         barCategoryGap={10}
       >
         <XAxis type="number" hide />
@@ -130,8 +146,17 @@ export function BarrasTempo({
           tickLine={false}
           axisLine={false}
         />
-        <Tooltip cursor={{ fill: "var(--color-superficie-2)" }} content={<DicaTempo />} />
-        <Bar dataKey="segundos" fill="var(--color-acento)" radius={[0, 6, 6, 0]} maxBarSize={22} isAnimationActive={false}>
+        <Tooltip
+          cursor={{ fill: "var(--color-superficie-2)" }}
+          content={<DicaTempo />}
+        />
+        <Bar
+          dataKey="segundos"
+          fill="var(--color-acento)"
+          radius={[0, 6, 6, 0]}
+          maxBarSize={22}
+          isAnimationActive={false}
+        >
           <LabelList
             dataKey="segundos"
             position="right"
@@ -153,17 +178,38 @@ export function BarrasMeses({
 }) {
   return (
     <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={dados} margin={{ top: 16, right: 8, bottom: 0, left: -20 }}>
+      <BarChart
+        data={dados}
+        margin={{ top: 16, right: 8, bottom: 0, left: -20 }}
+      >
         <XAxis
           dataKey="mes"
           tick={{ fill: EIXO, fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: "var(--color-borda-suave)" }}
         />
-        <YAxis tick={{ fill: EIXO, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
-        <Tooltip cursor={{ fill: "var(--color-superficie-2)" }} content={<DicaTempo sufixo="min" />} />
-        <Bar dataKey="videos" fill="var(--color-acento)" radius={[6, 6, 0, 0]} maxBarSize={48} isAnimationActive={false}>
-          <LabelList dataKey="videos" position="top" style={{ fill: EIXO, fontSize: 11 }} />
+        <YAxis
+          tick={{ fill: EIXO, fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+        />
+        <Tooltip
+          cursor={{ fill: "var(--color-superficie-2)" }}
+          content={<DicaTempo sufixo="min" />}
+        />
+        <Bar
+          dataKey="videos"
+          fill="var(--color-acento)"
+          radius={[6, 6, 0, 0]}
+          maxBarSize={48}
+          isAnimationActive={false}
+        >
+          <LabelList
+            dataKey="videos"
+            position="top"
+            style={{ fill: EIXO, fontSize: 11 }}
+          />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

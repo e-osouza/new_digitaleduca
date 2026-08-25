@@ -10,7 +10,7 @@ import { EstatisticasDoClub } from "@/components/club/estatisticas";
 export const metadata: Metadata = { title: "Digital Club" };
 
 const ABAS = [
-  { chave: "time", rotulo: "Time" },
+  { chave: "inicio", rotulo: "Início" },
   { chave: "estatisticas", rotulo: "Estatísticas" },
 ] as const;
 
@@ -37,11 +37,16 @@ function periodoPadrao() {
 export default async function PaginaClub({
   searchParams,
 }: {
-  searchParams: Promise<{ aba?: string; de?: string; ate?: string; todo?: string }>;
+  searchParams: Promise<{
+    aba?: string;
+    de?: string;
+    ate?: string;
+    todo?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const ativa: ChaveAba =
-    ABAS.find((item) => item.chave === sp.aba)?.chave ?? "time";
+    ABAS.find((item) => item.chave === sp.aba)?.chave ?? "inicio";
 
   const time = await obterMeuTime();
 
@@ -77,12 +82,12 @@ export default async function PaginaClub({
     puro. É a mesma razão de as abas serem navegação por URL, e não estado.
   */
   const estatisticas =
-    ativa === "estatisticas"
-      ? await obterEstatisticasDoTime(de, ate)
-      : null;
+    ativa === "estatisticas" ? await obterEstatisticasDoTime(de, ate) : null;
 
   return (
-    <div className={`${FAIXA} mx-auto flex max-w-3xl flex-col gap-6 py-8 sm:gap-8 sm:py-10`}>
+    <div
+      className={`${FAIXA} mx-auto flex max-w-5xl flex-col gap-6 py-8 sm:gap-8 sm:py-10`}
+    >
       <header className="flex flex-col gap-1.5">
         <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
           Digital Club
@@ -96,7 +101,7 @@ export default async function PaginaClub({
 
       <Abas base="/club" atual={ativa} itens={ABAS} />
 
-      {ativa === "time" && <PainelClub time={time} />}
+      {ativa === "inicio" && <PainelClub time={time} />}
 
       {ativa === "estatisticas" && (
         <div className="flex flex-col gap-6">
