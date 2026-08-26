@@ -59,14 +59,18 @@ export function MolduraAcesso({
   children: ReactNode;
 }) {
   return (
-    <div className="bg-fundo-2 flex min-h-dvh items-center justify-center p-4 sm:p-6 lg:p-8">
-      {/*
-        A moldura branca com o miolo respirando por dentro: `p-2` é a borda de
-        papel que separa o painel navy do fio externo do cartão.
-      */}
-      <div className="border-borda-suave bg-superficie w-full max-w-6xl rounded-[2rem] border p-2 shadow-xl sm:p-3">
-        <div className="grid items-stretch lg:grid-cols-2">
-          <aside className="bg-brand relative hidden overflow-hidden rounded-[1.5rem] lg:flex lg:min-h-[38rem] lg:flex-col lg:justify-between lg:gap-10 lg:p-10 xl:p-12">
+    /*
+      A tela inteira é o cartão: encosta nas quatro bordas, sem margem nem
+      fundo aparecendo em volta. O respiro é padding — a borda de papel que
+      separa o painel navy do limite da janela.
+
+      `flex-1` daqui até o miolo é o que leva a altura até embaixo; sem isso
+      tudo encolhia para a altura do formulário.
+    */
+    <div className="bg-superficie flex min-h-dvh flex-col p-3 sm:p-4">
+      <div className="flex flex-1 flex-col">
+        <div className="grid flex-1 items-stretch lg:grid-cols-2">
+          <aside className="bg-brand relative hidden overflow-hidden rounded-[1.5rem] lg:flex lg:flex-col lg:justify-between lg:gap-10 lg:p-10 xl:p-14">
             {/* Brilho difuso atrás do conteúdo, para o navy não ficar chapado. */}
             <div
               aria-hidden="true"
@@ -148,7 +152,7 @@ export function MolduraAcesso({
             </p>
           </aside>
 
-          <div className="flex items-center justify-center px-2 py-10 sm:px-8 sm:py-14 lg:px-12 xl:px-16">
+          <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8 sm:py-14 lg:px-12 xl:px-16">
             <div className="flex w-full max-w-md flex-col gap-7">
               {/*
                 No desktop o logotipo já está no painel; repeti-lo aqui seria
