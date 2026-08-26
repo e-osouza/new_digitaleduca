@@ -45,6 +45,19 @@ function gravarRecolhido(valor: boolean) {
   for (const ouvinte of ouvintes) ouvinte();
 }
 
+/**
+ * Trilhas fora do menu, temporariamente.
+ *
+ * Não existe trilha publicada — `/trilhas?limit=1` volta vazia —, e um item de
+ * menu que leva a uma tela vazia é pior do que item nenhum: quem clica conclui
+ * que a plataforma está quebrada, não que o conteúdo ainda vem.
+ *
+ * A ROTA continua de pé: links antigos, o painel e a tela do próprio conteúdo
+ * seguem funcionando. Quando a primeira trilha entrar no ar, isto volta a
+ * `true` e nada mais precisa mudar.
+ */
+const TRILHAS_NO_MENU = false;
+
 const GRUPOS: GrupoNav[] = [
   {
     titulo: null,
@@ -77,7 +90,8 @@ const GRUPOS: GrupoNav[] = [
       /*
        * A ordem é a do produto, não a do acervo: curso primeiro porque é o
        * compromisso mais longo, trilha em seguida porque organiza o resto, e
-       * MasterClass e podcast como consumo avulso.
+       * MasterClass e podcast como consumo avulso. É a mesma ordem dos trilhos
+       * da home — as duas listas precisam contar a mesma história.
        *
        * Os rótulos vêm de `ROTULOS_PLURAIS`, e não escritos aqui: "MasterClass"
        * é nome de PRODUTO sobre o tipo `AULA`, que é contrato de API e viaja
@@ -95,17 +109,21 @@ const GRUPOS: GrupoNav[] = [
           </>
         ),
       },
-      {
-        href: "/trilhas",
-        rotulo: "Trilhas",
-        icone: (
-          <>
-            <circle cx="5" cy="5" r="2" />
-            <circle cx="15" cy="15" r="2" />
-            <path d="M7 5h4a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h4" />
-          </>
-        ),
-      },
+      ...(TRILHAS_NO_MENU
+        ? [
+            {
+              href: "/trilhas",
+              rotulo: "Trilhas",
+              icone: (
+                <>
+                  <circle cx="5" cy="5" r="2" />
+                  <circle cx="15" cy="15" r="2" />
+                  <path d="M7 5h4a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h4" />
+                </>
+              ),
+            },
+          ]
+        : []),
       {
         href: "/masterclass",
         rotulo: ROTULOS_PLURAIS.AULA,

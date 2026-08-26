@@ -189,13 +189,21 @@ export async function Catalogo() {
         </Trilho>
       )}
 
-      {aulas.data.length > 0 && (
+      {/*
+        Curso primeiro, na mesma ordem do menu: é o compromisso mais longo e o
+        que a plataforma quer que a pessoa comece. MasterClass vem logo
+        depois, como consumo avulso.
+
+        O trilho só aparece quando existe curso publicado — enquanto o catálogo
+        não tiver nenhum, a home abre pela MasterClass, como abria antes.
+      */}
+      {cursos.data.length > 0 && (
         <Trilho
-          titulo="MasterClass"
-          descricao="Aulas aprofundadas para aplicar no dia a dia"
-          verMais={{ href: "/masterclass", rotulo: "Ver todas" }}
+          titulo="Cursos"
+          descricao="Formações completas, do começo ao fim"
+          verMais={{ href: "/cursos", rotulo: "Ver todos" }}
         >
-          {aulas.data.map((conteudo) => (
+          {cursos.data.map((conteudo) => (
             <CardConteudo
               key={conteudo.id}
               conteudo={conteudo}
@@ -205,15 +213,13 @@ export async function Catalogo() {
         </Trilho>
       )}
 
-      {/* O trilho só aparece quando existe curso publicado — enquanto o
-          catálogo não tiver nenhum, a home segue exatamente como antes. */}
-      {cursos.data.length > 0 && (
+      {aulas.data.length > 0 && (
         <Trilho
-          titulo="Cursos"
-          descricao="Formações completas, do começo ao fim"
-          verMais={{ href: "/cursos", rotulo: "Ver todos" }}
+          titulo="MasterClass"
+          descricao="Aulas aprofundadas para aplicar no dia a dia"
+          verMais={{ href: "/masterclass", rotulo: "Ver todas" }}
         >
-          {cursos.data.map((conteudo) => (
+          {aulas.data.map((conteudo) => (
             <CardConteudo
               key={conteudo.id}
               conteudo={conteudo}
