@@ -153,7 +153,18 @@ export function MolduraAcesso({
           </aside>
 
           <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8 sm:py-14 lg:px-12 xl:px-16">
-            <div className="flex w-full max-w-md flex-col gap-7">
+            {/*
+              As caixas de texto DESTAS telas ganham o azul claro no lugar do
+              branco. Aqui o fundo já é branco de ponta a ponta, e caixa branca
+              sobre fundo branco só existia pelo fio da borda; o tom dá a elas
+              silhueta própria. Fica no contêiner, e não em `Campo`, porque é
+              uma decisão desta moldura — nos formulários de dentro da
+              plataforma o fundo é outro, e lá a caixa branca é que destaca.
+
+              O `:not([type=checkbox])` preserva a caixa de seleção do
+              cadastro, que é pintada por `accent-color` e não por fundo.
+            */}
+            <div className="flex w-full max-w-md flex-col gap-7 [&_input:not([type='checkbox'])]:bg-superficie-2">
               {/*
                 No desktop o logotipo já está no painel; repeti-lo aqui seria
                 dizer a mesma coisa duas vezes na mesma tela. Abaixo de `lg`,
