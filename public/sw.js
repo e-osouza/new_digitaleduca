@@ -26,6 +26,16 @@ self.addEventListener("push", (evento) => {
   evento.waitUntil(
     self.registration.showNotification(titulo, {
       body: corpo,
+      /*
+       * `icon` é o ícone pequeno ao lado do texto: sempre a marca. `image` é a
+       * foto grande abaixo, e é ela que recebe a imagem escolhida no painel —
+       * confundir os dois foi o que fez a imagem não aparecer.
+       *
+       * `image` não é suportado em todo lugar: Chrome no Windows e no Android
+       * mostram; no macOS o sistema desenha a notificação e ignora a foto. Não
+       * há o que fazer no código — por isso a imagem é sempre um extra, nunca
+       * onde mora a informação.
+       */
       icon: "/logo/favicon.png",
       badge: "/logo/favicon.png",
       image: dados.imageUrl || extra.imageUrl || undefined,
