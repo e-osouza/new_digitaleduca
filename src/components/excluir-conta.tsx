@@ -3,19 +3,49 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo } from "@/components/campo";
+import { Modal } from "@/components/modal";
+
+/** A palavra que precisa ser digitada à mão para o botão destravar. */
+const PALAVRA = "EXCLUIR";
 
 /**
- * Exclusão da própria conta. Dois passos e senha obrigatória: é irreversível e
- * a API apaga também as assinaturas do usuário.
+ * Exclusão da própria conta.
+ *
+ * Três barreiras, e cada uma pega um erro diferente: o modal tira a ação do
+ * fluxo da página (ninguém apaga a conta raspando o dedo na tela), a palavra
+ * digitada exige uma decisão consciente — não dá para escrever EXCLUIR sem
+ * saber o que se está fazendo — e a senha prova que quem está ali é o dono da
+ * conta, e não alguém que sentou na máquina destravada.
+ *
+ * A senha continua sendo o que a API exige; a palavra é ritual, e vale contra
+ * o clique impulsivo, que é o erro mais comum aqui. É irreversível: a API
+ * apaga o cadastro e as assinaturas junto.
  */
 export function ExcluirConta() {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [confirmacao, setConfirmacao] = useState("");
+
+  /*
+   * Sem diferenciar maiúsculas: o que se quer é a intenção de escrever a
+   * palavra, e recusar "excluir" por causa do Caps Lock seria implicância —
+   * quem digitou já entendeu o que vai acontecer.
+   */
+  const conferiu = confirmacao.trim().toUpperCase() === PALAVRA;
+
+  function fechar() {
+    if (enviando) return;
+    setAberto(false);
+    setErro("");
+    setConfirmacao("");
+  }
 
   async function excluir(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (!conferiu) return;
+
     setErro("");
     setEnviando(true);
 
@@ -28,7 +58,9 @@ export function ExcluirConta() {
         body: JSON.stringify({ senha: String(dados.get("senha") ?? "") }),
       });
 
-      const corpo = (await resposta.json().catch(() => ({}))) as { erro?: string };
+      const corpo = (await resposta.json().catch(() => ({}))) as {
+        erro?: string;
+      };
 
       if (!resposta.ok) {
         setErro(corpo.erro ?? "Não foi possível excluir a conta.");
@@ -56,17 +88,56 @@ export function ExcluirConta() {
         </p>
       </div>
 
-      {!aberto ? (
-        <button
-          type="button"
-          onClick={() => setAberto(true)}
-          className="border-alerta/50 text-alerta hover:bg-alerta/10 flex min-h-11 w-fit items-center rounded-full border px-5 text-sm font-semibold transition-colors"
-        >
-          Quero excluir minha conta
-        </button>
-      ) : (
-        <form onSubmit={excluir} className="flex max-w-sm flex-col gap-4">
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        className="border-alerta/50 text-alerta hover:bg-alerta/10 flex min-h-11 w-fit items-center rounded-full border px-5 text-sm font-semibold transition-colors"
+      >
+        Quero excluir minha conta
+      </button>
+
+      <Modal
+        aberto={aberto}
+        aoFechar={fechar}
+        titulo="Tem certeza que quer excluir sua conta?"
+        largura="28rem"
+        /* Enquanto a chamada corre, Esc e clique fora não fecham: o pedido já
+           está a caminho e sumir com a tela esconderia o resultado. */
+        impedirFechar={enviando}
+      >
+        <form onSubmit={excluir} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <p className="text-texto-2 text-sm leading-relaxed">
+              Isto apaga seu cadastro, suas assinaturas, o histórico de
+              progresso e as suas listas.{" "}
+              <strong className="text-texto font-semibold">
+                Não há como desfazer
+              </strong>
+              , e nós não conseguimos recuperar nada depois.
+            </p>
+            <p className="text-texto-3 text-sm leading-relaxed">
+              Se o que você quer é só parar de pagar, cancele a assinatura em
+              Planos — a conta e o seu progresso continuam aqui.
+            </p>
+          </div>
+
           {erro && <Aviso>{erro}</Aviso>}
+
+          <Campo
+            id="confirmacao-exclusao"
+            name="confirmacao"
+            rotulo={`Digite ${PALAVRA} para confirmar`}
+            value={confirmacao}
+            onChange={(evento) => setConfirmacao(evento.target.value)}
+            /* Nada de ajuda do teclado: a palavra tem de vir da pessoa. */
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            autoFocus
+            required
+            placeholder={PALAVRA}
+          />
 
           <Campo
             id="senha-exclusao"
@@ -79,25 +150,30 @@ export function ExcluirConta() {
             dica="Precisamos confirmar que é você."
           />
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={enviando}
-              className="bg-alerta flex min-h-11 items-center rounded-full px-5 text-sm font-bold text-white transition-opacity disabled:opacity-60"
-            >
-              {enviando ? "Excluindo…" : "Excluir definitivamente"}
-            </button>
+          <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              onClick={() => setAberto(false)}
+              onClick={fechar}
               disabled={enviando}
-              className="border-borda bg-superficie hover:bg-superficie-2 flex min-h-11 items-center rounded-full border px-5 text-sm font-semibold transition-colors"
+              className="border-borda bg-superficie hover:bg-superficie-2 flex min-h-11 items-center rounded-full border px-5 text-sm font-semibold transition-colors disabled:opacity-60"
             >
               Cancelar
             </button>
+            <button
+              type="submit"
+              /*
+                Trancado até a palavra bater. `disabled` e não só a checagem no
+                envio: o botão apagado é o que mostra que falta um passo, em vez
+                de deixar a pessoa clicar e receber um erro.
+              */
+              disabled={enviando || !conferiu}
+              className="bg-alerta flex min-h-11 items-center rounded-full px-5 text-sm font-bold text-white transition-opacity disabled:opacity-50"
+            >
+              {enviando ? "Excluindo…" : "Excluir definitivamente"}
+            </button>
           </div>
         </form>
-      )}
+      </Modal>
     </section>
   );
 }
