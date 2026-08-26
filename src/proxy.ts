@@ -34,6 +34,7 @@ const ROTAS_PROTEGIDAS = [
   "/masterclass",
   "/podcast",
   "/aplicativo",
+  "/notificacoes",
 ];
 
 export function proxy(request: NextRequest) {

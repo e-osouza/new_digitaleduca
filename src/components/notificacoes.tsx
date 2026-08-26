@@ -4,22 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AtivarAvisos } from "@/components/ativar-avisos";
+import { ItemNotificacao } from "@/components/notificacao-item";
 import type { CaixaDeNotificacoes, Notificacao } from "@/types/api";
-
-/** "há 3 h", "ontem" — precisão de relógio não ajuda quem só quer saber se é recente. */
-function quando(iso: string) {
-  const minutos = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (minutos < 1) return "agora";
-  if (minutos < 60) return `há ${minutos} min`;
-  const horas = Math.round(minutos / 60);
-  if (horas < 24) return `há ${horas} h`;
-  const dias = Math.round(horas / 24);
-  if (dias === 1) return "ontem";
-  if (dias < 30) return `há ${dias} dias`;
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
-    new Date(iso),
-  );
-}
 
 /**
  * Sino de notificações do cabeçalho.
@@ -67,7 +53,8 @@ export function Notificacoes({ naoLidas = 0 }: { naoLidas?: number }) {
   useEffect(() => {
     if (!aberto) return;
     const fora = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setAberto(false);
     };
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setAberto(false);
@@ -183,64 +170,31 @@ export function Notificacoes({ naoLidas = 0 }: { naoLidas?: number }) {
             </div>
           ) : (
             <ul className="-mx-1 flex max-h-96 flex-col overflow-y-auto">
-              {itens.map((n) => {
-                const corpo = (
-                  <>
-                    <span className="flex items-start gap-2">
-                      {/* Marca de não lida — acompanhada do peso do texto, nunca só a cor. */}
-                      <span
-                        aria-hidden="true"
-                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                          n.lida ? "bg-transparent" : "bg-acento"
-                        }`}
-                      />
-                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span
-                          className={`text-sm ${n.lida ? "text-texto-2" : "text-texto font-semibold"}`}
-                        >
-                          {n.titulo}
-                        </span>
-                        <span className="text-texto-2 line-clamp-2 text-xs">
-                          {n.mensagem}
-                        </span>
-                        <span className="text-texto-3 text-[11px]">
-                          {quando(n.createdAt)}
-                          {!n.lida && (
-                            <span className="sr-only"> · não lida</span>
-                          )}
-                        </span>
-                      </span>
-                    </span>
-                  </>
-                );
-
-                return (
-                  <li key={n.id}>
-                    {n.link ? (
-                      <Link
-                        href={n.link}
-                        onClick={() => {
-                          if (!n.lida) marcar(n.id);
-                          setAberto(false);
-                        }}
-                        className="hover:bg-superficie-2 block rounded-lg px-3 py-2.5 transition-colors"
-                      >
-                        {corpo}
-                      </Link>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => !n.lida && marcar(n.id)}
-                        className="hover:bg-superficie-2 block w-full rounded-lg px-3 py-2.5 text-left transition-colors"
-                      >
-                        {corpo}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
+              {itens.map((n) => (
+                <li key={n.id}>
+                  <ItemNotificacao
+                    notificacao={n}
+                    aoLer={marcar}
+                    aoNavegar={() => setAberto(false)}
+                    denso
+                  />
+                </li>
+              ))}
             </ul>
           )}
+
+          {/*
+            A saída para a caixa inteira. O painel mostra os 15 mais recentes e
+            para por aí de propósito — quem precisa procurar um aviso de ontem
+            precisa de uma página, com paginação, não de uma gaveta que cresce.
+          */}
+          <Link
+            href="/notificacoes"
+            onClick={() => setAberto(false)}
+            className="border-borda-suave text-texto-2 hover:border-acento/60 hover:text-texto flex min-h-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors"
+          >
+            Ver todas
+          </Link>
 
           <AtivarAvisos />
         </div>

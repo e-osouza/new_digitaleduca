@@ -5,6 +5,7 @@ import type {
   Assinatura,
   AvaliacaoMedia,
   AvaliacaoUsuario,
+  CaixaDeNotificacoes,
   Categoria,
   CategoriaComConteudos,
   Conteudo,
@@ -746,6 +747,25 @@ export async function contarNotificacoesNaoLidas(): Promise<number> {
     { autenticado: true, revalidar: false },
   );
   return resposta?.naoLidas ?? 0;
+}
+
+/**
+ * A caixa de entrada paginada, para a página `/notificacoes`.
+ *
+ * Diferente do sino, aqui a lista vem do servidor junto da página: quem abriu
+ * este endereço veio para ler os avisos, então não há o que economizar.
+ *
+ * `null` em qualquer falha — a página decide o que dizer. Somem os avisos, não
+ * a plataforma.
+ */
+export async function listarNotificacoes(
+  page = 1,
+  limit = 20,
+): Promise<CaixaDeNotificacoes | null> {
+  return apiOpcional<CaixaDeNotificacoes>(
+    `/notificacoes?page=${page}&limit=${limit}`,
+    { autenticado: true, revalidar: false },
+  );
 }
 
 /* ------------------------------ club ------------------------------ */
