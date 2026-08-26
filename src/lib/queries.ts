@@ -729,6 +729,25 @@ export function normalizarMe(resposta: MeResponse | null): {
   return { usuario, assinatura, temAssinaturaAtiva, ehCortesia };
 }
 
+/* -------------------------- notificações -------------------------- */
+
+/**
+ * Quantas notificações a pessoa ainda não leu.
+ *
+ * Só o número: é o que o cabeçalho precisa para desenhar o ponto no sino, e
+ * carregar a lista inteira em toda navegação seria pagar caro por um contador.
+ *
+ * Qualquer erro vira zero. O cabeçalho aparece em TODA página da plataforma —
+ * uma falha aqui não pode derrubar a navegação inteira por causa de um aviso.
+ */
+export async function contarNotificacoesNaoLidas(): Promise<number> {
+  const resposta = await apiOpcional<{ naoLidas: number }>(
+    "/notificacoes/nao-lidas",
+    { autenticado: true, revalidar: false },
+  );
+  return resposta?.naoLidas ?? 0;
+}
+
 /* ------------------------------ club ------------------------------ */
 
 /**

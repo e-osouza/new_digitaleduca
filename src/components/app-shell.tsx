@@ -294,6 +294,7 @@ export function AppShell({
   avatar,
   saudacao,
   ehClub = false,
+  naoLidas = 0,
   children,
 }: {
   nome: string | null;
@@ -303,6 +304,8 @@ export function AppShell({
   saudacao: { texto: string; periodo: "dia" | "noite" };
   /** Papel CLUB: só então o menu mostra o painel do time. */
   ehClub?: boolean;
+  /** Contador do sino, resolvido no servidor — o ponto aparece sem esperar rede. */
+  naoLidas?: number;
   children: React.ReactNode;
 }) {
   const caminho = usePathname();
@@ -425,7 +428,7 @@ export function AppShell({
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <BuscaRapida />
 
-            <Notificacoes />
+            <Notificacoes naoLidas={naoLidas} />
           </div>
         </header>
 

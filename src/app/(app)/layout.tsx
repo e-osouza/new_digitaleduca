@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { api, ApiError } from "@/lib/api";
-import { normalizarMe } from "@/lib/queries";
+import { contarNotificacoesNaoLidas, normalizarMe } from "@/lib/queries";
 import { encerrarSessaoExpirada } from "@/lib/sessao-expirada";
 import { AppShell } from "@/components/app-shell";
 import { saudacao } from "@/lib/saudacao";
@@ -36,6 +36,12 @@ export default async function LayoutApp({
 
   const { usuario } = normalizarMe(me);
 
+  /*
+    Só o número. A lista fica para quando o sino abrir — buscá-la aqui seria
+    uma consulta em toda navegação para, quase sempre, não mostrar nada.
+  */
+  const naoLidas = usuario ? await contarNotificacoesNaoLidas() : 0;
+
   // Só avisamos quando a API afirma que não está verificado — campo ausente
   // não deve virar alarme falso.
   const precisaConfirmar = usuario?.emailVerified === false;
@@ -59,6 +65,7 @@ export default async function LayoutApp({
             forma — o item do Club no menu não custa uma requisição a mais.
           */
           ehClub={usuario?.role === "CLUB"}
+          naoLidas={naoLidas}
         >
           {precisaConfirmar && <AvisoEmail />}
           {children}

@@ -240,6 +240,32 @@ export interface MeuTime {
   vagasRestantes: number;
 }
 
+export type TipoNotificacao =
+  | "CONTEUDO_NOVO"
+  | "CONTEUDO_ATUALIZADO"
+  | "MANUAL";
+
+/** Um item da caixa de entrada — `GET /notificacoes`. */
+export interface Notificacao {
+  id: number;
+  tipo: TipoNotificacao;
+  titulo: string;
+  mensagem: string;
+  link: string | null;
+  imagemUrl: string | null;
+  conteudoId: number | null;
+  createdAt: string;
+  lida: boolean;
+  lidaEm: string | null;
+}
+
+/** `GET /notificacoes` — a caixa paginada, já com o total por ler. */
+export interface CaixaDeNotificacoes {
+  data: Notificacao[];
+  naoLidas: number;
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+}
+
 /** Uma pessoa do time na visão de engajamento — `GET /club/estatisticas`. */
 export interface MembroNoRelatorio {
   id: number;
