@@ -24,6 +24,16 @@ const ROTAS_PROTEGIDAS = [
   "/club",
   "/perfil",
   "/estatisticas",
+  /*
+   * As listagens por tipo e o app entraram depois e ficaram de fora desta
+   * lista. Sem cookie elas não quebravam — o layout da plataforma pede
+   * `/usuario/me` e o 401 acaba mandando para o login —, mas o desvio passava
+   * por uma renderização inteira e não preservava o destino em `?proximo`.
+   */
+  "/cursos",
+  "/masterclass",
+  "/podcast",
+  "/aplicativo",
 ];
 
 export function proxy(request: NextRequest) {
