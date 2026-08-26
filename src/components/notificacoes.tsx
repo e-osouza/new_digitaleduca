@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AtivarAvisos } from "@/components/ativar-avisos";
 import type { CaixaDeNotificacoes, Notificacao } from "@/types/api";
 
 /** "há 3 h", "ontem" — precisão de relógio não ajuda quem só quer saber se é recente. */
@@ -240,6 +241,8 @@ export function Notificacoes({ naoLidas = 0 }: { naoLidas?: number }) {
               })}
             </ul>
           )}
+
+          <AtivarAvisos />
         </div>
       )}
     </div>
