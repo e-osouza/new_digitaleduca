@@ -97,22 +97,23 @@ export function MolduraAcesso({
 
             <div className="relative flex flex-col gap-8">
               <div className="flex flex-col gap-2">
-                <p className="font-display text-2xl leading-tight font-semibold text-balance text-white xl:text-3xl">
-                  Conteúdo que você usa na próxima reunião.
-                </p>
                 {/*
-                  Duas exigências, e as duas vieram de erro anterior:
-                  1. Servir às TRÊS telas — entrar, criar conta e recuperar
-                     senha. A frase antiga dizia "Entre para continuar de onde
-                     parou", o que soava errado para quem estava criando a
-                     primeira conta.
-                  2. Não repetir os itens abaixo. "Com quem já escalou
-                     empresas" já é o texto de MasterClass, e dizer o mesmo
-                     duas vezes na mesma tela gasta a única frase que temos.
+                  Chamada e apoio vêm da comunicação da marca, escritos pela
+                  Digital Educa — inclusive as maiúsculas de "Destravar
+                  Resultados", que são da assinatura e não descuido.
+
+                  A frase serve às TRÊS telas desta moldura: entrar, criar
+                  conta e recuperar senha. Qualquer troca aqui precisa
+                  continuar servindo às três — a versão anterior a esta dizia
+                  "Entre para continuar de onde parou" e soava errada para
+                  quem estava criando a primeira conta.
                 */}
+                <p className="font-display text-2xl leading-tight font-semibold text-balance text-white xl:text-3xl">
+                  Digital Educa é o próximo passo para Destravar Resultados
+                </p>
                 <p className="max-w-md leading-relaxed text-white/70">
-                  Comece numa tela e continue em outra: o seu progresso
-                  acompanha você no navegador e no aplicativo.
+                  Sua plataforma de educação corporativa com cursos, palestras e
+                  conteúdos exclusivos.
                 </p>
               </div>
 
