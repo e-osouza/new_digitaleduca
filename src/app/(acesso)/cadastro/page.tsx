@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { estaAutenticado } from "@/lib/session";
+import { BotaoGoogle } from "@/components/botao-google";
 import { FormularioCadastro } from "@/components/formulario-cadastro";
 import { MolduraAcesso } from "@/components/moldura-acesso";
 
@@ -17,6 +18,12 @@ export default async function Cadastro() {
       descricao="Comece pelos conteúdos liberados e evolua quando quiser."
     >
       <FormularioCadastro />
+
+      {/*
+        O mesmo botão de entrar serve aqui: pelo Google, criar conta e entrar
+        são o mesmo gesto — se o e-mail ainda não existe, a conta nasce ali.
+      */}
+      <BotaoGoogle />
     </MolduraAcesso>
   );
 }

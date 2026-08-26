@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { estaAutenticado } from "@/lib/session";
+import { BotaoGoogle } from "@/components/botao-google";
 import { FormularioLogin } from "@/components/formulario-login";
 import { MolduraAcesso } from "@/components/moldura-acesso";
 import { Nota } from "@/components/campo";
@@ -60,6 +61,13 @@ export default async function Home({
       <Suspense>
         <FormularioLogin proximo={destino} />
       </Suspense>
+
+      {/*
+        Depois do formulário, não antes: quem já tem conta com senha é a
+        maioria hoje, e empurrar o Google para o topo colocaria o caminho menos
+        usado na frente do mais usado.
+      */}
+      <BotaoGoogle proximo={destino} />
     </MolduraAcesso>
   );
 }
