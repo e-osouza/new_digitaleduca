@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { Marca } from "@/components/marca";
 import {
@@ -32,9 +33,14 @@ const OFERTA = [
 /**
  * Moldura das telas de acesso: entrar, criar conta e recuperar senha.
  *
- * Tela dividida — formulário à esquerda, painel da marca à direita. O painel
- * some abaixo de `lg`, onde a largura não comporta duas colunas e o formulário
- * é a única coisa que importa.
+ * Um cartão único pousado sobre o fundo, com o painel da marca embutido nele —
+ * e não duas metades coladas de ponta a ponta na janela. A diferença é o ar em
+ * volta: a tela passa a ter uma peça no centro, em vez de dois blocos que se
+ * encostam no meio e vazam pelas bordas.
+ *
+ * O painel fica à ESQUERDA, onde o olho começa: ele é o que explica o que há
+ * do outro lado do login. Abaixo de `lg` ele some — não cabem duas colunas, e
+ * aí o formulário é a única coisa que importa.
  *
  * O painel usa cores fixas, e não os tokens do tema: ele é sempre o navy da
  * marca, então o texto em cima precisa ser sempre claro. Com tokens, o tema
@@ -53,95 +59,125 @@ export function MolduraAcesso({
   children: ReactNode;
 }) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-2">
-      <div className="flex min-h-dvh items-center justify-center px-5 py-12 sm:px-8 sm:py-16 lg:min-h-0">
-        <div className="flex w-full max-w-sm flex-col gap-7">
-          {/*
-            Aqui o fundo segue o tema, então vale o componente `Marca`, que
-            troca a arte clara pela escura sozinho — a versão branca fixa do
-            painel ficaria invisível no tema claro.
+    <div className="bg-fundo-2 flex min-h-dvh items-center justify-center p-4 sm:p-6 lg:p-8">
+      {/*
+        A moldura branca com o miolo respirando por dentro: `p-2` é a borda de
+        papel que separa o painel navy do fio externo do cartão.
+      */}
+      <div className="border-borda-suave bg-superficie w-full max-w-6xl rounded-[2rem] border p-2 shadow-xl sm:p-3">
+        <div className="grid items-stretch lg:grid-cols-2">
+          <aside className="bg-brand relative hidden overflow-hidden rounded-[1.5rem] lg:flex lg:min-h-[38rem] lg:flex-col lg:justify-between lg:gap-10 lg:p-10 xl:p-12">
+            {/* Brilho difuso atrás do conteúdo, para o navy não ficar chapado. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-[#0093e6]/25 blur-3xl"
+            />
 
-            É também o caminho de volta ao institucional, agora que o cabeçalho
-            saiu desta tela.
-          */}
-          <a
-            href={SITE_INSTITUCIONAL}
-            className="focus-visible:outline-acento w-fit rounded focus-visible:outline-2 focus-visible:outline-offset-4"
-            aria-label="Digital Educa"
-          >
-            <Marca altura={30} />
-          </a>
+            {/*
+              O logotipo branco direto do arquivo, e não o componente `Marca`:
+              aqui o fundo é sempre navy, então a troca por tema que a `Marca`
+              faz só serviria para apagar a arte no tema claro.
+            */}
+            <a
+              href={SITE_INSTITUCIONAL}
+              className="relative w-fit rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              <Image
+                src="/logo/de-branca.svg"
+                alt="Digital Educa"
+                width={97}
+                height={32}
+                priority
+              />
+            </a>
 
-          <div className="flex flex-col gap-2">
-            <h1 className="font-display text-3xl font-semibold tracking-tight">
-              {titulo}
-            </h1>
-            <p className="text-texto-3 text-sm">{descricao}</p>
+            <div className="relative flex flex-col gap-8">
+              <div className="flex flex-col gap-2">
+                <p className="font-display text-2xl leading-tight font-semibold text-balance text-white xl:text-3xl">
+                  Conteúdo que você usa na próxima reunião.
+                </p>
+                {/*
+                  Duas exigências, e as duas vieram de erro anterior:
+                  1. Servir às TRÊS telas — entrar, criar conta e recuperar
+                     senha. A frase antiga dizia "Entre para continuar de onde
+                     parou", o que soava errado para quem estava criando a
+                     primeira conta.
+                  2. Não repetir os itens abaixo. "Com quem já escalou
+                     empresas" já é o texto de MasterClass, e dizer o mesmo
+                     duas vezes na mesma tela gasta a única frase que temos.
+                */}
+                <p className="max-w-md leading-relaxed text-white/70">
+                  Comece numa tela e continue em outra: o seu progresso
+                  acompanha você no navegador e no aplicativo.
+                </p>
+              </div>
+
+              <ul className="flex flex-col gap-4">
+                {OFERTA.map((item) => (
+                  <li key={item.titulo} className="flex gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15"
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        className="h-3 w-3 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m4.5 10.5 3.5 3.5 7.5-8" />
+                      </svg>
+                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      <p className="font-semibold text-white">{item.titulo}</p>
+                      <p className="max-w-sm text-sm leading-snug text-white/60">
+                        {item.texto}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="relative text-xs text-white/40">
+              © {new Date().getFullYear()} Digital Educa. Todos os direitos
+              reservados.
+            </p>
+          </aside>
+
+          <div className="flex items-center justify-center px-2 py-10 sm:px-8 sm:py-14 lg:px-12 xl:px-16">
+            <div className="flex w-full max-w-md flex-col gap-7">
+              {/*
+                No desktop o logotipo já está no painel; repeti-lo aqui seria
+                dizer a mesma coisa duas vezes na mesma tela. Abaixo de `lg`,
+                onde o painel não existe, ele volta — e aí segue o tema, porque
+                o fundo também segue.
+              */}
+              <a
+                href={SITE_INSTITUCIONAL}
+                className="focus-visible:outline-acento w-fit rounded focus-visible:outline-2 focus-visible:outline-offset-4 lg:hidden"
+                aria-label="Digital Educa"
+              >
+                <Marca altura={30} />
+              </a>
+
+              <div className="flex flex-col gap-2">
+                <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                  {titulo}
+                </h1>
+                <p className="text-texto-3 text-sm">{descricao}</p>
+              </div>
+
+              {aviso}
+
+              {children}
+            </div>
           </div>
-
-          {aviso}
-
-          {children}
         </div>
       </div>
-
-      <aside className="bg-brand relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-center">
-        {/* Brilho difuso atrás do conteúdo, para o navy não ficar chapado. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-[#0093e6]/25 blur-3xl"
-        />
-
-        <div className="relative flex flex-col gap-10 px-12 py-16 xl:px-16">
-          <div className="flex flex-col gap-2">
-            <p className="font-display text-2xl leading-tight font-semibold text-balance text-white xl:text-3xl">
-              Conteúdo que você usa na próxima reunião.
-            </p>
-            {/*
-              Duas exigências, e as duas vieram de erro anterior:
-              1. Servir às TRÊS telas — entrar, criar conta e recuperar senha.
-                 A frase antiga dizia "Entre para continuar de onde parou", o
-                 que soava errado para quem estava criando a primeira conta.
-              2. Não repetir os itens abaixo. "Com quem já escalou empresas"
-                 já é o texto de MasterClass, e dizer o mesmo duas vezes na
-                 mesma tela gasta a única frase que temos aqui.
-            */}
-            <p className="max-w-md leading-relaxed text-white/70">
-              Comece numa tela e continue em outra: o seu progresso acompanha
-              você no navegador e no aplicativo.
-            </p>
-          </div>
-
-          <ul className="flex flex-col gap-4">
-            {OFERTA.map((item) => (
-              <li key={item.titulo} className="flex gap-3">
-                <span
-                  aria-hidden="true"
-                  className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15"
-                >
-                  <svg
-                    viewBox="0 0 20 20"
-                    className="h-3 w-3 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m4.5 10.5 3.5 3.5 7.5-8" />
-                  </svg>
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  <p className="font-semibold text-white">{item.titulo}</p>
-                  <p className="max-w-sm text-sm leading-snug text-white/60">
-                    {item.texto}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </aside>
     </div>
   );
 }

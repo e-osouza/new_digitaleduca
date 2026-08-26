@@ -29,7 +29,9 @@ export function FormularioLogin({ proximo = "/inicio" }: { proximo?: string }) {
       });
 
       if (!resposta.ok) {
-        const corpo = (await resposta.json().catch(() => ({}))) as { erro?: string };
+        const corpo = (await resposta.json().catch(() => ({}))) as {
+          erro?: string;
+        };
         setErro(corpo.erro ?? "Não foi possível entrar.");
         setEnviando(false);
         return;
@@ -56,6 +58,20 @@ export function FormularioLogin({ proximo = "/inicio" }: { proximo?: string }) {
         required
         autoFocus
         placeholder="voce@exemplo.com"
+        icone={
+          <svg
+            viewBox="0 0 20 20"
+            className="h-[18px] w-[18px]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="2.2" y="4.5" width="15.6" height="11" rx="2" />
+            <path d="m2.8 6 6.2 4.6a1.7 1.7 0 0 0 2 0L17.2 6" />
+          </svg>
+        }
       />
 
       <div className="flex flex-col gap-1.5">
@@ -67,9 +83,10 @@ export function FormularioLogin({ proximo = "/inicio" }: { proximo?: string }) {
           required
           placeholder="••••••••"
         />
+        {/* Alinhado à direita, sob o próprio campo a que se refere. */}
         <Link
           href="/recuperar-senha"
-          className="text-texto-3 hover:text-acento w-fit text-sm transition-colors"
+          className="text-texto-3 hover:text-acento self-end text-sm transition-colors"
         >
           Esqueci minha senha
         </Link>
@@ -78,14 +95,17 @@ export function FormularioLogin({ proximo = "/inicio" }: { proximo?: string }) {
       <button
         type="submit"
         disabled={enviando}
-        className="bg-acento text-white hover:bg-acento-hover mt-2 rounded-full px-6 py-3 text-sm font-bold transition-colors disabled:opacity-60"
+        className="bg-acento text-white hover:bg-acento-hover mt-2 flex min-h-12 items-center justify-center rounded-full px-6 text-sm font-bold transition-colors disabled:opacity-60"
       >
         {enviando ? "Entrando…" : "Entrar"}
       </button>
 
       <p className="text-texto-3 text-center text-sm">
         Ainda não tem conta?{" "}
-        <Link href="/cadastro" className="text-acento hover:text-acento-claro font-semibold">
+        <Link
+          href="/cadastro"
+          className="text-acento hover:text-acento-claro font-semibold"
+        >
           Criar agora
         </Link>
       </p>
