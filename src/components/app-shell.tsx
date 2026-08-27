@@ -58,6 +58,15 @@ function gravarRecolhido(valor: boolean) {
  */
 const TRILHAS_NO_MENU = false;
 
+/**
+ * "Baixe o app" fora do menu, temporariamente.
+ *
+ * Mesma chave, mesmo motivo da de cima: a página `/aplicativo` continua
+ * existindo e funcionando — quem tem o link chega nela —, só não é mais
+ * anunciada no menu. Voltar a `true` recoloca o item no fim da lista.
+ */
+const APP_NO_MENU = false;
+
 const GRUPOS: GrupoNav[] = [
   {
     titulo: null,
@@ -246,21 +255,23 @@ const GRUPOS: GrupoNav[] = [
         ),
       },
       /*
-       * O app saiu do cabeçalho e virou item de menu. É o único destino daqui
-       * que mora no site institucional, fora da moldura logada — clicar leva
-       * para o layout público, e por isso ele fica no fim da lista, depois de
-       * tudo que é da plataforma.
+       * O app fica no fim da lista, depois de tudo que é da plataforma: é o
+       * único item que não leva a conteúdo, e sim para fora do navegador.
        */
-      {
-        href: "/aplicativo",
-        rotulo: "Baixe o app",
-        icone: (
-          <>
-            <rect x="6" y="2.5" width="8" height="15" rx="2" />
-            <path d="M9 15.2h2" />
-          </>
-        ),
-      },
+      ...(APP_NO_MENU
+        ? [
+            {
+              href: "/aplicativo",
+              rotulo: "Baixe o app",
+              icone: (
+                <>
+                  <rect x="6" y="2.5" width="8" height="15" rx="2" />
+                  <path d="M9 15.2h2" />
+                </>
+              ),
+            },
+          ]
+        : []),
     ],
   },
 ];
