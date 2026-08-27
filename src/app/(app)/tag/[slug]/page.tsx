@@ -1,36 +1,35 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { mapaDeProgresso, obterTag } from "@/lib/queries";
+import { mapaDeProgresso, obterTagPorSlug } from "@/lib/queries";
 import { CardConteudo } from "@/components/card-conteudo";
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const tag = await obterTag(Number(id));
+  const { slug } = await params;
+  const tag = await obterTagPorSlug(slug);
   return { title: tag?.nome ? `#${tag.nome}` : "Tag" };
 }
 
 export default async function PaginaTag({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const numero = Number(id);
-  if (!Number.isInteger(numero) || numero <= 0) notFound();
+  const { slug } = await params;
+  if (!slug) notFound();
 
   const [tag, progresso] = await Promise.all([
-    obterTag(numero),
+    obterTagPorSlug(slug),
     mapaDeProgresso(),
   ]);
   if (!tag) notFound();
 
   /*
-   * `GET /tags/{id}` devolve os vínculos, não os conteúdos direto — cada item
-   * é `{ conteudoId, conteudo }`. Filtramos vínculos órfãos e removemos
+   * `GET /tags/slug/{slug}` devolve os vínculos, não os conteúdos direto — cada
+   * item é `{ conteudoId, conteudo }`. Filtramos vínculos órfãos e removemos
    * repetições pelo id do conteúdo.
    */
   const conteudos = [

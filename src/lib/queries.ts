@@ -541,8 +541,10 @@ export function minhaAvaliacao(videoId: number) {
 
 /* ---------------- descoberta ---------------- */
 
-export function obterTag(id: number) {
-  return apiOpcional<TagDetalhe>(`/tags/${id}`, { revalidar: 600 });
+export function obterTagPorSlug(slug: string) {
+  return apiOpcional<TagDetalhe>(`/tags/slug/${encodeURIComponent(slug)}`, {
+    revalidar: 600,
+  });
 }
 
 export function listarTags() {

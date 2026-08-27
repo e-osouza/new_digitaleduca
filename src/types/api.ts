@@ -52,6 +52,7 @@ export interface Subcategoria {
 export interface Tag {
   id: number;
   nome: string;
+  slug?: string;
 }
 
 export interface Instrutor {
@@ -444,10 +445,11 @@ export interface AvaliacaoUsuario {
   nota: number | null;
 }
 
-/** `GET /tags/{id}` — os conteúdos vêm aninhados no vínculo. */
+/** `GET /tags/{id}` e `/tags/slug/{slug}` — os conteúdos vêm aninhados no vínculo. */
 export interface TagDetalhe {
   id: number;
   nome: string;
+  slug: string;
   conteudos: { conteudoId: number; conteudo: Conteudo }[];
 }
 
