@@ -37,6 +37,8 @@ export interface Envelope<T> {
 export interface Categoria {
   id: number;
   nome: string;
+  /** Slug para URL amigável. Presente nas listagens e no detalhe do conteúdo. */
+  slug?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -166,9 +168,12 @@ export interface ConteudoResumo {
 export interface CategoriaComConteudos {
   id: number;
   categoria: string;
+  /** Slug para URL amigável, gerado do nome. */
+  slug: string;
   subcategorias: {
     id: number;
     nome: string;
+    slug: string;
     conteudos: ConteudoResumo[];
   }[];
 }

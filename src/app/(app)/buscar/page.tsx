@@ -95,7 +95,7 @@ export default async function Buscar({
                 {(categorias ?? []).map((categoria) => (
                   <li key={categoria.id}>
                     <Link
-                      href={`/categoria/${categoria.id}`}
+                      href={`/categoria/${categoria.slug ?? categoria.id}`}
                       className="border-borda-suave bg-superficie hover:border-acento/60 hover:bg-superficie-2 ease-suave group flex h-full items-center gap-3 rounded-xl border p-4 transition-[border-color,background-color,transform] duration-200 active:scale-[0.98]"
                     >
                       <span

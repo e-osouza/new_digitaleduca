@@ -579,7 +579,7 @@ export function obterCategoria(id: number) {
  * vêm agrupadas por subcategoria. Conteúdos repetidos entre as duas são
  * removidos pelo id.
  */
-export async function conteudosDaCategoria(categoriaId: number): Promise<{
+export async function conteudosDaCategoria(slug: string): Promise<{
   nome: string | null;
   subcategorias: { id: number; nome: string; conteudos: ConteudoResumo[] }[];
 }> {
@@ -588,8 +588,9 @@ export async function conteudosDaCategoria(categoriaId: number): Promise<{
     arvorePremium().catch(() => [] as CategoriaComConteudos[]),
   ]);
 
+  /* Resolve por slug — a URL agora é /categoria/{slug}, não mais o id. */
   const encontradas = [...gratuitos, ...premium].filter(
-    (c) => c.id === categoriaId,
+    (c) => c.slug === slug,
   );
   if (encontradas.length === 0) return { nome: null, subcategorias: [] };
 

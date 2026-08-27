@@ -7,24 +7,23 @@ import { Trilho } from "@/components/trilho";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const { nome } = await conteudosDaCategoria(Number(id));
+  const { slug } = await params;
+  const { nome } = await conteudosDaCategoria(slug);
   return { title: nome ?? "Categoria" };
 }
 
 export default async function PaginaCategoria({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const numero = Number(id);
-  if (!Number.isInteger(numero) || numero <= 0) notFound();
+  const { slug } = await params;
+  if (!slug) notFound();
 
   const [{ nome, subcategorias }, progresso] = await Promise.all([
-    conteudosDaCategoria(numero),
+    conteudosDaCategoria(slug),
     mapaDeProgresso(),
   ]);
   if (!nome) notFound();

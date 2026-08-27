@@ -545,7 +545,7 @@ function BlocoDetalhes({
                   <dt className="text-texto-3 text-xs">Categoria</dt>
                   <dd>
                     <Link
-                      href={`/categoria/${conteudo.categoria.id}`}
+                      href={`/categoria/${conteudo.categoria.slug ?? conteudo.categoria.id}`}
                       className="text-acento hover:text-acento-hover font-medium"
                     >
                       {conteudo.categoria.nome}

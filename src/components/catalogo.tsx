@@ -268,7 +268,7 @@ export async function Catalogo() {
           {categorias.map((categoria) => (
             <Link
               key={categoria.id}
-              href={`/categoria/${categoria.id}`}
+              href={`/categoria/${categoria.slug ?? categoria.id}`}
               className="border-borda-suave bg-superficie hover:border-acento/60 hover:bg-superficie-2 ease-suave group card-trilho-estreito flex flex-col items-center gap-2.5 rounded-xl border p-3 text-center transition-[border-color,background-color,transform] duration-200 active:scale-[0.98] sm:gap-3 sm:p-4"
             >
               <span
