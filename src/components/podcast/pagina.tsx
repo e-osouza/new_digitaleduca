@@ -715,9 +715,17 @@ export function PaginaPodcast({
                     )}
                   </span>
 
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    {/*
+                      Título inteiro numa linha só, e não convidado em cima com
+                      tema embaixo. `separarTitulo` parte o título da API em
+                      dois para o cabeçalho do player, onde há espaço para os
+                      dois pesos; aqui a lista quer uma coisa só, e mostrar
+                      apenas o convidado deixaria "Tallis Gomes" sem dizer sobre
+                      o quê é o episódio.
+                    */}
                     <span
-                      className={`truncate text-sm font-semibold ${
+                      className={`line-clamp-2 text-sm leading-snug font-semibold ${
                         atual
                           ? "text-acento"
                           : ouvido
@@ -725,20 +733,17 @@ export function PaginaPodcast({
                             : "text-texto"
                       }`}
                     >
-                      {ep.convidado}
+                      {ep.tema ? `${ep.convidado} — ${ep.tema}` : ep.convidado}
                     </span>
-                    {ep.tema && (
-                      <span className="text-texto-3 line-clamp-2 text-xs leading-snug">
-                        {ep.tema}
-                      </span>
-                    )}
 
+                    {/*
+                      Duração sempre, mesmo no que já foi ouvido: ela é a ficha
+                      do episódio, não o estado de quem escuta — e o visto sobre
+                      a capa já conta essa parte. "Faltam" só entra no que foi
+                      começado e não terminado, que é quando a pergunta existe.
+                    */}
                     <span className="text-texto-3 flex items-center gap-2 text-xs tabular-nums">
-                      {ouvido ? (
-                        <span className="text-sucesso font-semibold">Ouvido</span>
-                      ) : (
-                        ep.duracao > 0 && formatarRelogio(ep.duracao)
-                      )}
+                      {ep.duracao > 0 && formatarRelogio(ep.duracao)}
                       {!ouvido && andamento > 0 && (
                         <span>· faltam {formatarRelogio(restante)}</span>
                       )}
