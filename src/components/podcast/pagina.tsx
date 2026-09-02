@@ -156,21 +156,36 @@ export function PaginaPodcast({
       const indoParaVideo = destino === "video";
       const posicao = indoParaVideo ? cederPara() : tempoDoVideo.current;
       const tocava = indoParaVideo ? r.tocando : Date.now() - avancoEm.current < 1000;
+      /*
+       * Só existe posição a passar adiante se o áudio estiver COM o episódio.
+       *
+       * Sem esta pergunta, trocar para vídeo antes de dar o play gravava uma
+       * retomada em zero — `cederPara` devolve a posição de um elemento que
+       * nunca tocou — e essa retomada, por ser do mesmo episódio, ganhava do
+       * ponto salvo no servidor: o vídeo começava do zero mesmo para quem
+       * tinha parado no minuto vinte. O áudio nunca sofreu disso porque ele
+       * lê a posição do próprio `midia.segundos`.
+       */
+      const comOEpisodio = r.episodio?.conteudoId === emFoco?.conteudoId;
 
       setApagando(true);
 
       window.setTimeout(() => {
         definirModo(destino);
         if (indoParaVideo) {
-          tempoDoVideo.current = posicao;
-          if (emFoco) setRetomada({ conteudoId: emFoco.conteudoId, segundos: posicao });
+          tempoDoVideo.current = comOEpisodio ? posicao : 0;
+          setRetomada(
+            emFoco && comOEpisodio
+              ? { conteudoId: emFoco.conteudoId, segundos: posicao }
+              : null,
+          );
         } else {
           retomarEm(posicao, tocava);
         }
         setApagando(false);
       }, 180);
     },
-    [cederPara, definirModo, emFoco, r.modo, r.tocando, retomarEm],
+    [cederPara, definirModo, emFoco, r.episodio, r.modo, r.tocando, retomarEm],
   );
 
   const marcarTempoDoVideo = useCallback((segundos: number) => {
