@@ -298,17 +298,20 @@ export function PaginaPodcast({
                   )}
                 </div>
               )}
-
-              <AlternadorModo modo={r.modo} aoTrocar={trocarModo} />
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col gap-3">
-              {noAr && (
-                <span className="bg-acento/12 text-acento flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold">
-                  <IconeOnda animando={r.tocando} />
-                  {r.tocando ? "Reproduzindo agora" : "Em pausa"}
-                </span>
-              )}
+              {/*
+                O alternador abre a coluna do texto, no lugar onde antes ficava
+                o aviso de "Reproduzindo agora".
+
+                O aviso saiu porque era redundante: a onda animando, o botão em
+                pausa e a régua andando já dizem que há som no ar, cada um
+                melhor do que uma frase. O alternador, ao contrário, é uma
+                escolha — e escolha se oferece antes de a pessoa começar a
+                ouvir, não escondida embaixo da capa.
+              */}
+              <AlternadorModo modo={r.modo} aoTrocar={trocarModo} />
 
               <h1 className="font-display text-xl leading-tight font-semibold tracking-tight text-balance sm:text-2xl">
                 {emFoco.tema ?? emFoco.convidado}
