@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Player } from "@/components/player";
+import { OndaAudio } from "@/components/podcast/onda";
 import { formatarData, formatarRelogio } from "@/lib/format";
 import Link from "next/link";
 import { PARAM_EPISODIO, rotaDoEpisodio } from "@/lib/podcast";
@@ -282,6 +283,19 @@ export function PaginaPodcast({
                       priority
                     />
                   )}
+
+                  {/*
+                    O selo de ouvido sobre a capa, como na playlist. É a mesma
+                    informação que a ficha dá lá embaixo em "Você ouviu", mas
+                    aqui ela chega antes de qualquer leitura — e é o que
+                    explica o botão de ouvir de novo, logo abaixo.
+                  */}
+                  {ouvidoEmFoco && !modoVideo && (
+                    <span className="bg-cromo/90 text-sucesso absolute top-3 left-3 flex items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2 text-xs font-bold shadow-sm backdrop-blur-sm">
+                      <IconeVistoCheio />
+                      Ouvido
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -359,7 +373,24 @@ export function PaginaPodcast({
             dele.
           */}
           {!modoVideo && (
-          <div className="border-borda-suave flex flex-col gap-5 border-t pt-5">
+          <div className="border-borda-suave flex flex-col gap-4 border-t pt-5 sm:gap-5">
+            {/*
+              A onda vem antes da régua e diz a mesma coisa em outra escala: a
+              régua é precisão, a onda é a sensação de que há som acontecendo.
+              Clicar nela também busca — é o alvo grande, para o mouse; a régua
+              continua sendo o comando de teclado e de leitor de tela.
+            */}
+            <OndaAudio
+              semente={emFoco.conteudoId}
+              progresso={progressoEmFoco}
+              tocando={r.tocando}
+              aoBuscar={
+                noAr && duracao > 0
+                  ? (fracao) => r.irPara(fracao * duracao)
+                  : undefined
+              }
+            />
+
             <div className="flex items-center gap-3">
               <span className="text-texto-3 w-10 shrink-0 text-[11px] tabular-nums sm:w-12 sm:text-xs">
                 {formatarRelogio(tempo)}
@@ -430,7 +461,14 @@ export function PaginaPodcast({
                   r.tocando ? "Pausar" : reouvir ? "Ouvir de novo" : "Tocar"
                 }
                 title={reouvir ? "Ouvir de novo desde o início" : undefined}
-                className="bg-acento hover:bg-acento-hover flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition-colors disabled:opacity-60 sm:h-16 sm:w-16"
+                /*
+                  A peça principal da fileira, e o tamanho diz isso: degradê
+                  entre os dois tons de acento, halo do mesmo acento por fora e
+                  um empurrão de escala ao apertar. Os outros quatro comandos
+                  seguem discretos de propósito — só um deles é o que a pessoa
+                  procura no escuro.
+                */
+                className="from-acento to-acento-claro ring-acento/10 hover:ring-acento/20 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-lg ring-8 transition-all active:scale-95 disabled:opacity-60 sm:h-[72px] sm:w-[72px]"
               >
                 {r.carregando ? (
                   <IconeCarregando />
@@ -833,6 +871,15 @@ function IconeVisto() {
   return (
     <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="m5 10.5 3.5 3.5L15 6.5" />
+    </svg>
+  );
+}
+
+/** Visto dentro de um círculo cheio — o selo sobre a capa. */
+function IconeVistoCheio() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+      <path d="M10 1.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17Zm4.2 6.3-5 5.2a1 1 0 0 1-1.44 0L5.8 11a1 1 0 0 1 1.44-1.4l1.24 1.3 4.28-4.5a1 1 0 1 1 1.44 1.4Z" />
     </svg>
   );
 }

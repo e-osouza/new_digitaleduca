@@ -592,6 +592,37 @@ dialog[open]::backdrop {
   Aqui ela usa os tokens da página (e não os do player, que vivem sobre vídeo
   escuro): o player de podcast mora numa superfície clara.
 */
+/*
+  A onda do player de podcast.
+
+  Cada barra pulsa em torno da própria altura, com `scaleY` e origem no centro
+  — animar `height` custaria layout a cada quadro em 72 elementos. A pausa é
+  `animation-play-state`, aplicado pelo componente: a onda congela onde está
+  em vez de voltar ao repouso, que é o que o olho espera de um áudio pausado.
+*/
+.onda-barra {
+  transform-origin: center;
+  animation: ondular 1s var(--ease-suave) infinite;
+}
+
+@keyframes ondular {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Quem pediu menos movimento vê a onda parada — ela informa progresso, e isso
+   continua legível sem animação nenhuma. */
+@media (prefers-reduced-motion: reduce) {
+  .onda-barra {
+    animation: none;
+  }
+}
+
 .regua-podcast {
   appearance: none;
   height: 6px;
