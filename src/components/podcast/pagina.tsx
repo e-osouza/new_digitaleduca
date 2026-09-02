@@ -285,6 +285,43 @@ export function PaginaPodcast({
                   )}
 
                   {/*
+                    Em vídeo, o quadro É o único comando disponível.
+
+                    O <Player> só monta depois que o episódio abre, porque é a
+                    abertura que descobre o id no Vimeo. Até lá o modo vídeo
+                    mostrava a capa e mais nada: a fileira de transporte fica
+                    escondida (quem comanda o vídeo é o próprio Player), então
+                    quem trocasse de modo antes de dar o play ficava sem
+                    NENHUMA forma de começar — capa parada e nenhum botão.
+
+                    O play sobre o quadro é a saída, e é também o gesto que a
+                    pessoa já espera de uma miniatura de vídeo. Ele abre o
+                    episódio exatamente como o botão grande do modo áudio,
+                    inclusive na regra de recomeçar o que já foi ouvido.
+                  */}
+                  {modoVideo && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        r.abrir(emFoco, episodios, { doComeco: reouvir })
+                      }
+                      disabled={r.carregando}
+                      aria-label={reouvir ? "Ver de novo" : "Assistir"}
+                      className="group absolute inset-0 flex items-center justify-center bg-black/35 transition-colors hover:bg-black/45 disabled:cursor-default"
+                    >
+                      <span className="from-acento to-acento-claro ease-suave flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-lg ring-8 ring-white/10 transition-transform group-hover:scale-105 group-active:scale-95">
+                        {r.carregando ? (
+                          <IconeCarregando />
+                        ) : reouvir ? (
+                          <IconeRepetir />
+                        ) : (
+                          <IconePlay />
+                        )}
+                      </span>
+                    </button>
+                  )}
+
+                  {/*
                     O selo de ouvido sobre a capa, como na playlist. É a mesma
                     informação que a ficha dá lá embaixo em "Você ouviu", mas
                     aqui ela chega antes de qualquer leitura — e é o que
