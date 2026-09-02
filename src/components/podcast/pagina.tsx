@@ -607,9 +607,18 @@ export function PaginaPodcast({
             {emFoco.categoria && (
               <Ficha rotulo="Categoria" valor={emFoco.categoria} />
             )}
-            {duracao > 0 && (
-              <Ficha rotulo="Duração" valor={formatarRelogio(duracao)} />
-            )}
+            {/*
+              A ficha SEMPRE traz a linha da duração, mesmo sem saber o valor.
+              Aqui a ausência é informação: quem abre "Sobre o episódio" está
+              conferindo os dados, e uma linha que some deixa a pessoa achando
+              que passou o olho por cima. Diferente do relógio do cabeçalho e
+              da linha da playlist, que são estreitos demais para uma frase e
+              onde o silêncio não confunde.
+            */}
+            <Ficha
+              rotulo="Duração"
+              valor={duracao > 0 ? formatarRelogio(duracao) : "Não informada"}
+            />
             {emFoco.publicadoEm && (
               <Ficha
                 rotulo="Publicado em"
