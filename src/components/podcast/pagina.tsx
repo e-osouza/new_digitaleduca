@@ -16,6 +16,19 @@ import {
 
 const VELOCIDADES = [1, 1.25, 1.5, 2];
 
+/**
+ * Relógio que admite não saber.
+ *
+ * A duração vem da listagem, e alguns episódios chegam da API com ela em zero
+ * — o vídeo foi cadastrado sem o campo preenchido. `formatarRelogio(0)` diz
+ * "00:00", que é uma afirmação FALSA: o episódio não tem zero minuto, nós é
+ * que não sabemos quantos ele tem. Enquanto ninguém der o play (é o elemento
+ * de mídia que revela a duração real), o traço é a resposta honesta.
+ */
+function relogioConhecido(segundos: number) {
+  return segundos > 0 ? formatarRelogio(segundos) : "--:--";
+}
+
 
 /**
  * Tela do podcast: player à esquerda, playlist à direita.
@@ -385,10 +398,12 @@ export function PaginaPodcast({
               )}
 
               <div className="text-texto-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm tabular-nums">
-                <span className="flex items-center gap-1.5">
-                  <IconeRelogio />
-                  {formatarRelogio(duracao)}
-                </span>
+                {duracao > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <IconeRelogio />
+                    {formatarRelogio(duracao)}
+                  </span>
+                )}
                 {emFoco.publicadoEm && (
                   <span className="flex items-center gap-1.5">
                     <IconeCalendario />
@@ -463,7 +478,7 @@ export function PaginaPodcast({
                 style={{ "--preenchido": `${preenchido}%` } as React.CSSProperties}
               />
               <span className="text-texto-3 w-10 shrink-0 text-right text-[11px] tabular-nums sm:w-12 sm:text-xs">
-                {formatarRelogio(duracao)}
+                {relogioConhecido(duracao)}
               </span>
             </div>
 
@@ -592,7 +607,9 @@ export function PaginaPodcast({
             {emFoco.categoria && (
               <Ficha rotulo="Categoria" valor={emFoco.categoria} />
             )}
-            <Ficha rotulo="Duração" valor={formatarRelogio(duracao)} />
+            {duracao > 0 && (
+              <Ficha rotulo="Duração" valor={formatarRelogio(duracao)} />
+            )}
             {emFoco.publicadoEm && (
               <Ficha
                 rotulo="Publicado em"
@@ -723,7 +740,7 @@ export function PaginaPodcast({
                       {ouvido ? (
                         <span className="text-sucesso font-semibold">Ouvido</span>
                       ) : (
-                        formatarRelogio(ep.duracao)
+                        ep.duracao > 0 && formatarRelogio(ep.duracao)
                       )}
                       {!ouvido && andamento > 0 && (
                         <span>· faltam {formatarRelogio(restante)}</span>
