@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { FaixaRolavel } from "@/components/faixa-rolavel";
 
 /**
- * Faixa horizontal de cards. O scroll é nativo (classe `.trilho` em
- * globals.css), sem JavaScript: funciona com toque, trackpad e teclado.
+ * Faixa horizontal de cards. A rolagem é nativa (classe `.trilho` em
+ * globals.css) — toque, trackpad e teclado —, e a `FaixaRolavel` acrescenta o
+ * arraste com o mouse e as setas de passo, que é o que faltava para quem usa
+ * mouse de mesa.
  *
  * Cabeçalho e faixa usam a mesma `.calha`, então o primeiro card nasce
  * exatamente na coluna do título em qualquer largura de tela — sem container
@@ -27,7 +30,9 @@ export function Trilho({
             {titulo}
           </h2>
           {descricao && (
-            <p className="text-texto-3 truncate text-xs sm:text-sm">{descricao}</p>
+            <p className="text-texto-3 truncate text-xs sm:text-sm">
+              {descricao}
+            </p>
           )}
         </div>
         {verMais && (
@@ -40,9 +45,7 @@ export function Trilho({
         )}
       </div>
 
-      <div className="trilho calha flex gap-3 overflow-x-auto pb-2 sm:gap-4">
-        {children}
-      </div>
+      <FaixaRolavel>{children}</FaixaRolavel>
     </section>
   );
 }
