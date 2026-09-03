@@ -256,7 +256,6 @@ export async function Catalogo() {
             <CardConteudo
               key={conteudo.id}
               conteudo={conteudo}
-              largura="card-trilho-quadrado"
               progresso={progresso.get(conteudo.id)}
             />
           ))}

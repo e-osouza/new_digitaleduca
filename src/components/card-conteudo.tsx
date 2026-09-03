@@ -67,17 +67,25 @@ export function CardConteudo({
   prioritaria?: boolean;
 }) {
   const deitado = orientacao === "horizontal";
-  /*
-   * Podcast é sempre quadrado, a convenção do formato — e a decisão sai do
-   * próprio conteúdo, não de quem chama. Em listas misturadas (busca,
-   * categoria, relacionados) o chamador não tem como saber o tipo de cada item.
-   *
-   * A arte em pé do acervo vem em 850×971, quase 1:1, então o recorte quadrado
-   * não perde nada de relevante.
-   */
-  // Podcast é sempre quadrado — inclusive no trilho deitado, onde antes virava
-  // 16:9 e cortava a arte de álbum.
   const podcast = conteudo.tipo === "PODCAST";
+
+  /*
+   * A arte de podcast é 1:1 de verdade — 1254×1254, conferido na API — e o
+   * retrato do catálogo é 7/8. O card fica com a MESMA largura e a MESMA
+   * altura total dos outros; quem absorve a diferença é o espaço abaixo da
+   * arte, nunca a arte.
+   *
+   * Duas saídas foram descartadas, cada uma por um motivo visto na tela:
+   *
+   * 1. Recortar o quadrado no retrato 7/8. São 6% de cada lado, e parecia
+   *    pouco — só que a capa do DSXCAST é tipografia sangrando até a borda:
+   *    "PARE DE BUSCAR" perdia o P, "CANCELOU" virava "ANCELOU".
+   * 2. Alargar o card até o quadrado caber na altura cheia. Nivela, mas faz o
+   *    trilho de podcast ter cards maiores que todos os outros.
+   *
+   * Sobra o óbvio: a arte quadrada na largura do card, e a folga vai para a
+   * margem do bloco de texto — ver `folgaAbaixoDaArte`.
+   */
   const quadrado = podcast;
 
   // Deitado usa a arte horizontal (`thumbnailDesktop`); a vertical/quadrada vem
@@ -98,10 +106,32 @@ export function CardConteudo({
       ? rotaDoEpisodio(conteudo.id)
       : `/conteudo/${conteudo.id}`;
 
+  /*
+   * No trilho deitado a largura também acompanha o enquadramento: um quadro
+   * quadrado num card de 16/9 sobraria vazio dos dois lados. Lá o card de
+   * podcast fica mais ESTREITO que os vizinhos, com a mesma altura.
+   */
+  const classeLargura = quadrado && deitado ? "card-trilho-quadrado" : largura;
+
+  /*
+   * O que falta para o card quadrado alcançar a altura do retrato: um sétimo
+   * da própria largura.
+   *
+   * A conta sai da geometria, não das variáveis do trilho. O retrato 7/8 tem
+   * altura L × 8/7 e o quadrado tem altura L, então a diferença é L/7 — e L é
+   * a largura do card, que é contra quem `100%` mede numa margem.
+   *
+   * Tentei antes `calc(var(--altura-arte) - var(--largura-card))`, e deu 8,59px
+   * no lugar de 37: aquelas variáveis carregam um `100%` que, lá no trilho,
+   * mede a faixa inteira, mas aqui dentro do card passa a medir o card. Valor
+   * herdado com porcentagem muda de significado ao descer na árvore.
+   */
+  const folgaAbaixoDaArte = quadrado && !deitado ? "calc(100% / 7)" : undefined;
+
   return (
     <Link
       href={href ?? destinoPadrao}
-      className={`group focus-visible:outline-acento ease-suave block shrink-0 transition-transform duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 ${largura}`}
+      className={`group focus-visible:outline-acento ease-suave block shrink-0 transition-transform duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 ${classeLargura}`}
     >
       <article className="flex w-full flex-col gap-2.5">
         {/*
@@ -195,7 +225,12 @@ export function CardConteudo({
           )}
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div
+          className="flex flex-col gap-1"
+          style={
+            folgaAbaixoDaArte ? { marginTop: folgaAbaixoDaArte } : undefined
+          }
+        >
           <span className="text-texto-3 text-[11px] font-semibold tracking-wider uppercase">
             {rotuloTipo(conteudo.tipo)}
           </span>
