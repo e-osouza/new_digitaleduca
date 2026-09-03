@@ -273,6 +273,33 @@ button:disabled {
   --colunas: 2;
   --espiada: 0.2;
   --vao: 0.75rem;
+
+  /*
+    Largura de um card no retrato 7/8, que é o padrão do catálogo.
+
+    A área visível em repouso vai do início do conteúdo até a parede direita —
+    ou seja, a caixa de conteúdo (100%) MAIS a calha da esquerda, já que o card
+    seguinte avança por baixo dela. Dividimos essa medida pelo número de
+    colunas somado à fração que deve espiar, descontando os vãos.
+  */
+  --largura-card: calc(
+    (100% + var(--calha) - (var(--colunas) - 1) * var(--vao)) /
+      (var(--colunas) + var(--espiada))
+  );
+
+  /*
+    A ALTURA DA ARTE é a medida comum a todos os trilhos.
+
+    Antes cada proporção escolhia o próprio número de colunas, e a altura saía
+    como consequência: no desktop o retrato 7/8 dava 298px de arte e o quadrado
+    do podcast, 208px — 90px de diferença entre um trilho e o vizinho, com o
+    olho reparando no degrau a cada rolagem da home.
+
+    Agora é o contrário: a altura manda e cada proporção deriva a largura dela.
+    Quem é 1:1 fica com a largura igual à altura; quem é 16/9 fica mais largo.
+    A arte continua inteira em qualquer um — nada é recortado para caber.
+  */
+  --altura-arte: calc(var(--largura-card) * 8 / 7);
 }
 .trilho::-webkit-scrollbar {
   display: none;
@@ -300,22 +327,12 @@ button:disabled {
 }
 
 /*
-  Largura do card dentro do trilho.
-
-  A área visível em repouso vai do início do conteúdo até a parede direita —
-  ou seja, a caixa de conteúdo (100%) MAIS a calha da esquerda, já que o card
-  seguinte avança por baixo dela. Dividimos essa medida pelo número de colunas
-  somado à fração que deve espiar, descontando os vãos entre os cards.
-
-  `flex-basis` tem precedência sobre `width`, então isto vence o `w-full` que
-  o card usa quando aparece em grade.
+  Card do trilho, no retrato 7/8 do catálogo — a proporção que define a altura
+  comum. `flex-basis` tem precedência sobre `width`, então isto vence o
+  `w-full` que o card usa quando aparece em grade.
 */
 .card-trilho {
-  flex: 0 0
-    calc(
-      (100% + var(--calha) - (var(--colunas) - 1) * var(--vao)) /
-        (var(--colunas) + var(--espiada))
-    );
+  flex: 0 0 var(--largura-card);
 }
 
 /*
@@ -351,62 +368,27 @@ button:disabled {
 /*
   Card de arte horizontal (16/9), usado em "Continue de onde parou".
 
-  Mesma fórmula, com uma coluna a menos em cada faixa: a arte deitada precisa
-  de mais largura para não virar uma tira. `--colunas` é redeclarada no próprio
-  card, então a conta acima já a enxerga sem duplicar o cálculo.
+  A largura sai da altura comum, não de um número próprio de colunas: 16/9 de
+  altura. Ele fica mais largo que o retrato — é o preço de manter a linha do
+  olho no mesmo lugar, e a arte deitada agradece o espaço.
 */
 .card-trilho-largo {
-  --colunas: 1;
-  flex: 0 0
-    calc(
-      (100% + var(--calha) - (var(--colunas) - 1) * var(--vao)) /
-        (var(--colunas) + var(--espiada))
-    );
-}
-
-@media (min-width: 48rem) {
-  .card-trilho-largo {
-    --colunas: 2;
-  }
-}
-
-@media (min-width: 64rem) {
-  .card-trilho-largo {
-    --colunas: 3;
-  }
+  flex: 0 0 calc(var(--altura-arte) * 16 / 9);
 }
 
 /*
   Card quadrado do trilho de podcasts.
 
-  A capa de podcast é 1:1, e não o retrato 7/8 dos outros tipos — na largura das
-  quatro colunas padrão ela ficava alta demais para o que mostra. Cinco no
-  desktop, sempre com a espiada do próximo.
+  A capa de podcast é 1:1, e não o retrato 7/8 dos outros tipos. Sendo quadrada,
+  a largura É a altura comum — o card fica mais largo que o do catálogo e o
+  trilho passa a terminar na mesma linha dos vizinhos.
 
   Vale só no trilho dedicado a podcasts. Nas fileiras misturadas (destaques,
   mais assistidos, novidades) o card fica na largura comum: ali a coluna
   precisa bater com a dos vizinhos, que não são quadrados.
 */
 .card-trilho-quadrado {
-  --colunas: 2;
-  flex: 0 0
-    calc(
-      (100% + var(--calha) - (var(--colunas) - 1) * var(--vao)) /
-        (var(--colunas) + var(--espiada))
-    );
-}
-
-/* Degrau intermediário: de 2 para 5 de uma vez deixaria o tablet apertado. */
-@media (min-width: 48rem) {
-  .card-trilho-quadrado {
-    --colunas: 4;
-  }
-}
-
-@media (min-width: 64rem) {
-  .card-trilho-quadrado {
-    --colunas: 5;
-  }
+  flex: 0 0 var(--altura-arte);
 }
 
 /*

@@ -199,7 +199,15 @@ export function CardConteudo({
           <span className="text-texto-3 text-[11px] font-semibold tracking-wider uppercase">
             {rotuloTipo(conteudo.tipo)}
           </span>
-          <h3 className="text-texto group-hover:text-acento-claro line-clamp-2 text-sm leading-snug font-semibold transition-colors">
+          {/*
+            Duas linhas reservadas, mesmo quando o título ocupa uma.
+
+            Sem isto o trilho onde todos os títulos são curtos termina 19px
+            acima do vizinho, e o degrau reaparece por baixo — a arte já está
+            alinhada, mas o cartão não. É o mesmo `line-clamp-2` de sempre; o
+            que muda é o piso.
+          */}
+          <h3 className="text-texto group-hover:text-acento-claro line-clamp-2 min-h-[2.375rem] text-sm leading-snug font-semibold transition-colors">
             {conteudo.titulo}
           </h3>
         </div>
