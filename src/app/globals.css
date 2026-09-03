@@ -368,12 +368,17 @@ button:disabled {
 /*
   Card de arte horizontal (16/9), usado em "Continue de onde parou".
 
-  A largura sai da altura comum, não de um número próprio de colunas: 16/9 de
-  altura. Ele fica mais largo que o retrato — é o preço de manter a linha do
-  olho no mesmo lugar, e a arte deitada agradece o espaço.
+  A largura sai de `--largura-card`, e não de um número próprio de colunas:
+  16/9 dela. Isso faz a arte deitada ter a MESMA ALTURA da arte quadrada do
+  podcast, que é a outra moradora daquele trilho — as duas ficam com a altura
+  de um card padrão, e as capas encostam na mesma linha de baixo.
+
+  A conta usa a largura, e não `--altura-arte`, de propósito: pela altura do
+  retrato 7/8 a arte deitada ficaria 37px mais alta que a do podcast ao lado, e
+  o degrau reaparecia dentro da própria fileira.
 */
 .card-trilho-largo {
-  flex: 0 0 calc(var(--altura-arte) * 16 / 9);
+  flex: 0 0 calc(var(--largura-card) * 16 / 9);
 }
 
 /*
