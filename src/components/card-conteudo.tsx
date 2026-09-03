@@ -75,10 +75,15 @@ export function CardConteudo({
    * A arte em pé do acervo vem em 850×971, quase 1:1, então o recorte quadrado
    * não perde nada de relevante.
    */
-  const quadrado = conteudo.tipo === "PODCAST" && !deitado;
+  // Podcast é sempre quadrado — inclusive no trilho deitado, onde antes virava
+  // 16:9 e cortava a arte de álbum.
+  const podcast = conteudo.tipo === "PODCAST";
+  const quadrado = podcast;
 
-  // A arte deitada mora em `thumbnailDesktop`; a em pé, em `thumbnailMobile`.
-  const capa = deitado ? capaDoConteudo(conteudo) : capaVertical(conteudo);
+  // Deitado usa a arte horizontal (`thumbnailDesktop`); a vertical/quadrada vem
+  // de `thumbnailMobile`. Podcast puxa sempre a quadrada, mesmo deitado.
+  const capa =
+    deitado && !podcast ? capaDoConteudo(conteudo) : capaVertical(conteudo);
   const liberado = estaLiberado(conteudo);
   const duracao =
     duracaoSegundos ?? (temVideos(conteudo) ? duracaoTotal(conteudo) : 0);
@@ -107,10 +112,10 @@ export function CardConteudo({
         */}
         <div
           className={`bg-superficie group-hover:shadow-acento/10 ease-suave relative overflow-hidden rounded-xl transition-shadow duration-300 group-hover:shadow-lg ${
-            deitado
-              ? "aspect-video"
-              : quadrado
-                ? "aspect-square"
+            quadrado
+              ? "aspect-square"
+              : deitado
+                ? "aspect-video"
                 : "aspect-[7/8]"
           }`}
         >
