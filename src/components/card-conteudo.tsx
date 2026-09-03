@@ -107,11 +107,17 @@ export function CardConteudo({
       : `/conteudo/${conteudo.id}`;
 
   /*
-   * No trilho deitado a largura também acompanha o enquadramento: um quadro
-   * quadrado num card de 16/9 sobraria vazio dos dois lados. Lá o card de
-   * podcast fica mais ESTREITO que os vizinhos, com a mesma altura.
+   * No trilho deitado o podcast usa a largura PADRÃO do catálogo, e não a
+   * larga de 16/9 que o chamador passou — um quadro quadrado num card deitado
+   * sobraria vazio dos dois lados.
+   *
+   * A largura escolhida é a mesma dos trilhos que vêm abaixo na home: assim a
+   * capa de podcast tem sempre o mesmo tamanho em qualquer fileira, e a de
+   * "Continue de onde parou" não vira uma exceção de meia largura. Ela fica
+   * mais estreita que os vizinhos de 16/9 da própria fileira — nunca mais
+   * alta, que é o que importa para a linha do olho.
    */
-  const classeLargura = quadrado && deitado ? "card-trilho-quadrado" : largura;
+  const classeLargura = quadrado && deitado ? "card-trilho" : largura;
 
   /*
    * O que falta para o card quadrado alcançar a altura do retrato: um sétimo
