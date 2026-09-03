@@ -84,7 +84,7 @@ export function CardConteudo({
    *    trilho de podcast ter cards maiores que todos os outros.
    *
    * Sobra o óbvio: a arte quadrada na largura do card, e a folga vai para a
-   * margem do bloco de texto — ver `folgaAbaixoDaArte`.
+   * folga no pé do card — ver `folgaNoPe`.
    */
   const quadrado = podcast;
 
@@ -125,21 +125,31 @@ export function CardConteudo({
    *
    * A conta sai da geometria, não das variáveis do trilho. O retrato 7/8 tem
    * altura L × 8/7 e o quadrado tem altura L, então a diferença é L/7 — e L é
-   * a largura do card, que é contra quem `100%` mede numa margem.
+   * a largura do card, que é contra quem `100%` mede numa porcentagem de
+   * padding ou margem.
    *
    * Tentei antes `calc(var(--altura-arte) - var(--largura-card))`, e deu 8,59px
    * no lugar de 37: aquelas variáveis carregam um `100%` que, lá no trilho,
    * mede a faixa inteira, mas aqui dentro do card passa a medir o card. Valor
    * herdado com porcentagem muda de significado ao descer na árvore.
+   *
+   * A folga vai no PÉ do card, e não entre a arte e o texto. Estava em cima e
+   * abria um vão que não existia em nenhum outro trilho — a legenda parecia
+   * ter descolado da capa. Embaixo ela é invisível: o card não tem fundo nem
+   * borda, então o que sobra é só ar, e a fileira continua terminando na mesma
+   * linha das outras.
    */
-  const folgaAbaixoDaArte = quadrado && !deitado ? "calc(100% / 7)" : undefined;
+  const folgaNoPe = quadrado && !deitado ? "calc(100% / 7)" : undefined;
 
   return (
     <Link
       href={href ?? destinoPadrao}
       className={`group focus-visible:outline-acento ease-suave block shrink-0 transition-transform duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 ${classeLargura}`}
     >
-      <article className="flex w-full flex-col gap-2.5">
+      <article
+        className="flex w-full flex-col gap-2.5"
+        style={folgaNoPe ? { paddingBottom: folgaNoPe } : undefined}
+      >
         {/*
           Sem borda: a capa sangra até o canto arredondado. A moldura clara
           desenhava um retângulo em volta de cada arte e, num trilho, virava
@@ -231,12 +241,7 @@ export function CardConteudo({
           )}
         </div>
 
-        <div
-          className="flex flex-col gap-1"
-          style={
-            folgaAbaixoDaArte ? { marginTop: folgaAbaixoDaArte } : undefined
-          }
-        >
+        <div className="flex flex-col gap-1">
           <span className="text-texto-3 text-[11px] font-semibold tracking-wider uppercase">
             {rotuloTipo(conteudo.tipo)}
           </span>
