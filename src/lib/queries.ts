@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { api, apiOpcional, ApiError } from "@/lib/api";
+import { rotaDoEpisodio } from "@/lib/podcast";
 import type {
   Assinatura,
   AvaliacaoMedia,
@@ -24,6 +25,7 @@ import type {
   ListaPaginada,
   MeResponse,
   MeuTime,
+  Notificacao,
   Negocio,
   PerfilInstrutor,
   Plano,
@@ -753,6 +755,47 @@ export async function contarNotificacoesNaoLidas(): Promise<number> {
 }
 
 /**
+ * Reescreve para a tela do podcast os avisos que apontam para um episódio.
+ *
+ * A notificação chega da API com `link: "/conteudo/163"`, que é a ficha do
+ * conteúdo — a página de apresentação. Para um episódio de ~20 min isso é uma
+ * parada no meio do caminho: quem clica num aviso de podcast quer ouvir, e o
+ * destino certo é `/podcast?episodio=163`, que abre o player já tocando.
+ *
+ * O tipo não vem no aviso (`tipo` só distingue novo/atualizado/manual), então
+ * quem responde é o acervo: a listagem de podcasts é pública e fica 300s no
+ * cache do servidor, de modo que a pergunta não custa uma ida à API por aviso
+ * — nem por requisição, na prática.
+ *
+ * Em qualquer falha os avisos passam intactos: um link para a ficha é um
+ * destino pior, não um destino quebrado.
+ */
+async function comDestinoDePodcast(itens: Notificacao[]): Promise<Notificacao[]> {
+  if (itens.length === 0) return itens;
+
+  const acervo = await listarConteudos({ tipo: "PODCAST", limit: 200 }).catch(
+    () => null,
+  );
+  if (!acervo) return itens;
+
+  const episodios = new Set(acervo.data.map((c) => c.id));
+
+  return itens.map((aviso) => {
+    /* O id vem do campo próprio; o link é o recurso quando ele falta. */
+    const daRota = aviso.link?.match(/^\/conteudo\/(\d+)/)?.[1];
+    const id = aviso.conteudoId ?? (daRota ? Number(daRota) : null);
+
+    if (id === null || !episodios.has(id)) return aviso;
+    return { ...aviso, link: rotaDoEpisodio(id) };
+  });
+}
+
+/** A mesma reescrita, para a rota que alimenta o sino do cabeçalho. */
+export function destinosDeNotificacao(itens: Notificacao[]) {
+  return comDestinoDePodcast(itens);
+}
+
+/**
  * A caixa de entrada paginada, para a página `/notificacoes`.
  *
  * Diferente do sino, aqui a lista vem do servidor junto da página: quem abriu
@@ -765,10 +808,13 @@ export async function listarNotificacoes(
   page = 1,
   limit = 20,
 ): Promise<CaixaDeNotificacoes | null> {
-  return apiOpcional<CaixaDeNotificacoes>(
+  const caixa = await apiOpcional<CaixaDeNotificacoes>(
     `/notificacoes?page=${page}&limit=${limit}`,
     { autenticado: true, revalidar: false },
   );
+  if (!caixa) return null;
+
+  return { ...caixa, data: await comDestinoDePodcast(caixa.data) };
 }
 
 /* ------------------------------ club ------------------------------ */

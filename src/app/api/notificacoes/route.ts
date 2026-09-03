@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import type { CaixaDeNotificacoes } from "@/types/api";
 import { API_URL } from "@/lib/api";
+import { destinosDeNotificacao } from "@/lib/queries";
 import { lerToken } from "@/lib/session";
 
 /**
@@ -30,5 +32,15 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json(await resposta.json());
+  const caixa = (await resposta.json()) as CaixaDeNotificacoes;
+
+  /*
+   * Aviso de podcast leva ao player, e não à ficha — ver
+   * `destinosDeNotificacao`. A reescrita vive no servidor para o painel do
+   * sino e a página `/notificacoes` nunca discordarem sobre o destino.
+   */
+  return NextResponse.json({
+    ...caixa,
+    data: await destinosDeNotificacao(caixa.data ?? []),
+  });
 }
