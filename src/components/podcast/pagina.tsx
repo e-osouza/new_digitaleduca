@@ -69,11 +69,6 @@ export function PaginaPodcast({
   /*
    * Chegada por um card de podcast: abre tocando o episódio pedido.
    *
-   * O `?episodio=` sai da URL logo em seguida, por `replaceState` — assim um
-   * F5 mais tarde não arrasta a pessoa de volta para esse episódio depois de
-   * ela ter escolhido outro na playlist. Trocar por `router.replace` daria uma
-   * navegação e remontaria a tela no meio da reprodução.
-   *
    * A guarda de uma vez só é necessária: o efeito depende de `abrir`, que muda
    * quando o episódio no ar muda — sem ela, escolher outro episódio na
    * playlist devolveria o comando ao da URL.
@@ -88,11 +83,36 @@ export function PaginaPodcast({
 
     jaAbriuDaUrl.current = true;
     abrir(pedido, episodios);
+  }, [abrir, episodioInicial, episodios]);
+
+  /*
+   * A URL segue o episódio no ar.
+   *
+   * Escolher na playlist é trocar de episódio, e o endereço tem de dizer qual
+   * — para copiar, guardar nos favoritos ou recarregar sem perder o lugar. É o
+   * MESMO endereço que os cards da plataforma usam (`rotaDoEpisodio`), então
+   * chegar por um card e escolher aqui dentro dão a mesma barra de endereços.
+   *
+   * Antes acontecia o contrário: o `?episodio=` era APAGADO ao abrir, para um
+   * F5 não arrastar de volta ao episódio do card depois de a pessoa ter
+   * escolhido outro. Com o endereço acompanhando a escolha, esse risco some —
+   * o F5 devolve exatamente o que estava tocando.
+   *
+   * `replaceState` e não `router.replace`: uma navegação remontaria a tela no
+   * meio da reprodução. E só quando há episódio no ar — quem só abriu a tela
+   * ainda não escolheu nada, e a URL limpa é a resposta honesta.
+   */
+  const noArId = r.episodio?.conteudoId ?? null;
+
+  useEffect(() => {
+    if (noArId === null) return;
 
     const url = new URL(window.location.href);
-    url.searchParams.delete(PARAM_EPISODIO);
+    if (url.searchParams.get(PARAM_EPISODIO) === String(noArId)) return;
+
+    url.searchParams.set(PARAM_EPISODIO, String(noArId));
     window.history.replaceState(null, "", url.pathname + url.search);
-  }, [abrir, episodioInicial, episodios]);
+  }, [noArId]);
 
   // Sem nada tocando, a tela já mostra o primeiro episódio pronto para o play.
   const emFoco = r.episodio ?? episodios[0] ?? null;
