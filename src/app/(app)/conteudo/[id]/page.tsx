@@ -103,6 +103,12 @@ export default async function PaginaConteudo({
     limit: 200,
   }).catch(() => null);
 
+  /*
+   * Podcast não chega aqui: o proxy desvia `/conteudo/{id}` de episódio para
+   * `/podcast?episodio={id}` antes de qualquer renderização — ver `proxy.ts`.
+   * A ficha de podcast abaixo continua sendo o caminho degradado, para quando
+   * o acervo não responder ao proxy.
+   */
   let conteudo: Conteudo;
   let bloqueado = false;
 
@@ -128,6 +134,7 @@ export default async function PaginaConteudo({
    * (aprendizagem, lista de aulas) não descreve isso.
    */
   const ehPodcast = conteudo.tipo === "PODCAST";
+
   const { convidado, tema } = separarTitulo(conteudo.titulo);
 
   const capa = conteudo.thumbnailDestaque ?? capaDoConteudo(conteudo);

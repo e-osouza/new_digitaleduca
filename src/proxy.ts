@@ -37,8 +37,66 @@ const ROTAS_PROTEGIDAS = [
   "/notificacoes",
 ];
 
-export function proxy(request: NextRequest) {
+/** `/conteudo/163` — o formato que a API manda nas notificações. */
+const FICHA_DE_CONTEUDO = /^\/conteudo\/(\d+)$/;
+
+/*
+ * Ids dos episódios, em memória, renovados a cada 5 minutos.
+ *
+ * O proxy roda antes de qualquer renderização e não tem o cache de dados do
+ * Next à disposição, então a lista é guardada aqui mesmo. São ~20 números; o
+ * custo é uma chamada pública a cada cinco minutos, e o ganho é um 307 de
+ * verdade no lugar do `<meta refresh>` de 1 segundo que um `redirect()` de
+ * página produz depois que o layout começou a transmitir.
+ */
+const VALIDADE_DO_ACERVO = 5 * 60 * 1000;
+let episodios: { ids: Set<number>; ate: number } | null = null;
+
+async function ehEpisodio(id: number) {
+  if (!episodios || Date.now() > episodios.ate) {
+    const base =
+      process.env.NEXT_PUBLIC_API_URL ?? "https://api.digitaleduca.com.vc";
+
+    try {
+      const resposta = await fetch(`${base}/conteudos?tipo=PODCAST&limit=200`, {
+        cache: "no-store",
+      });
+      if (!resposta.ok) return false;
+
+      const corpo = (await resposta.json()) as { data?: { id: number }[] };
+      episodios = {
+        ids: new Set((corpo.data ?? []).map((c) => c.id)),
+        ate: Date.now() + VALIDADE_DO_ACERVO,
+      };
+    } catch {
+      // Sem acervo, ninguém é desviado — a ficha do conteúdo abre como sempre.
+      return false;
+    }
+  }
+
+  return episodios.ids.has(id);
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  /*
+   * Notificação de podcast abre o player, e não a ficha.
+   *
+   * O aviso do sistema é entregue pelo service worker com o link cru que a API
+   * mandou (`/conteudo/163`), e ali não há como saber o tipo do conteúdo. O
+   * desvio acontece aqui, antes de qualquer renderização: quem clica cai
+   * direto no episódio, que começa a tocar sozinho.
+   *
+   * Vem antes da checagem de sessão de propósito — assim quem estiver
+   * deslogado volta para o PLAYER depois de entrar, e não para a ficha.
+   */
+  const ficha = pathname.match(FICHA_DE_CONTEUDO);
+  if (ficha && (await ehEpisodio(Number(ficha[1])))) {
+    return NextResponse.redirect(
+      new URL(`/podcast?episodio=${ficha[1]}`, request.url),
+    );
+  }
 
   const protegida = ROTAS_PROTEGIDAS.some(
     (rota) => pathname === rota || pathname.startsWith(`${rota}/`),
