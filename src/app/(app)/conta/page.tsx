@@ -215,7 +215,7 @@ async function AbaConta() {
         )}
       </div>
 
-      <ExcluirConta />
+      <ExcluirConta temSenha={usuario?.temSenha ?? true} />
     </div>
   );
 }

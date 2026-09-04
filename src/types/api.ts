@@ -204,6 +204,8 @@ export interface Usuario {
   objetivoPlataforma?: string | null;
   formatoAprendizado?: string | null;
   aceitaNotificacoes?: boolean;
+  /** `false` quando a conta entra só por Google/Apple e ainda não tem senha. */
+  temSenha?: boolean;
 }
 
 /** Alguém já dentro do time — `GET /club/time`. */

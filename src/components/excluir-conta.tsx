@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Campo } from "@/components/campo";
@@ -21,7 +22,7 @@ const PALAVRA = "EXCLUIR";
  * o clique impulsivo, que é o erro mais comum aqui. É irreversível: a API
  * apaga o cadastro e as assinaturas junto.
  */
-export function ExcluirConta() {
+export function ExcluirConta({ temSenha = true }: { temSenha?: boolean }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [erro, setErro] = useState("");
@@ -88,14 +89,35 @@ export function ExcluirConta() {
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setAberto(true)}
-        className="border-alerta/50 text-alerta hover:bg-alerta/10 flex min-h-11 w-fit items-center rounded-full border px-5 text-sm font-semibold transition-colors"
-      >
-        Quero excluir minha conta
-      </button>
+      {!temSenha ? (
+        /*
+          Conta social (Google/Apple) não tem senha, e a API exige a senha para
+          excluir. Em vez de deixar a pessoa abrir o modal e bater num erro,
+          mostramos a instrução aqui, visível, com o caminho para definir a
+          senha (o código vai para o e-mail que ela controla).
+        */
+        <Aviso>
+          Sua conta entra pelo <strong>Google ou Apple</strong> e ainda não tem
+          senha. Por segurança, para excluir a conta você precisa primeiro{" "}
+          <Link
+            href="/recuperar-senha"
+            className="text-alerta font-semibold underline underline-offset-2"
+          >
+            definir uma senha
+          </Link>{" "}
+          e depois voltar aqui.
+        </Aviso>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAberto(true)}
+          className="border-alerta/50 text-alerta hover:bg-alerta/10 flex min-h-11 w-fit items-center rounded-full border px-5 text-sm font-semibold transition-colors"
+        >
+          Quero excluir minha conta
+        </button>
+      )}
 
+      {temSenha && (
       <Modal
         aberto={aberto}
         aoFechar={fechar}
@@ -174,6 +196,7 @@ export function ExcluirConta() {
           </div>
         </form>
       </Modal>
+      )}
     </section>
   );
 }
