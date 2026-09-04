@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { estaAutenticado } from "@/lib/session";
+import { BotaoApple } from "@/components/botao-apple";
 import { BotaoGoogle } from "@/components/botao-google";
 import { FormularioCadastro } from "@/components/formulario-cadastro";
 import { MolduraAcesso } from "@/components/moldura-acesso";
@@ -24,6 +25,7 @@ export default async function Cadastro() {
         são o mesmo gesto — se o e-mail ainda não existe, a conta nasce ali.
       */}
       <BotaoGoogle />
+      <BotaoApple />
     </MolduraAcesso>
   );
 }

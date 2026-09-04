@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { estaAutenticado } from "@/lib/session";
+import { BotaoApple } from "@/components/botao-apple";
 import { BotaoGoogle } from "@/components/botao-google";
 import { FormularioLogin } from "@/components/formulario-login";
 import { MolduraAcesso } from "@/components/moldura-acesso";
@@ -68,6 +69,7 @@ export default async function Home({
         usado na frente do mais usado.
       */}
       <BotaoGoogle proximo={destino} />
+      <BotaoApple proximo={destino} />
     </MolduraAcesso>
   );
 }
