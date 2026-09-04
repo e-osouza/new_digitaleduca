@@ -141,6 +141,11 @@ export interface Conteudo {
    * as duas origens convivem — ver `pessoasDoEpisodio`.
    */
   apresentador?: string | null;
+  /**
+   * Convidados do episódio, em `conteudos.convidados` — texto puro, nomes
+   * separados por vírgula. Como o apresentador, não é vínculo com Instrutor.
+   */
+  convidados?: string | null;
   categoria?: Categoria;
   subcategoria?: Subcategoria;
   /** Presentes na resposta real, ausentes na spec. */

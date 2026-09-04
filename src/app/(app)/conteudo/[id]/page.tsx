@@ -477,6 +477,35 @@ function BlocoInstrutores({
   conteudo: Conteudo;
   ehPodcast?: boolean;
 }) {
+  /*
+    Podcast: convidados são TEXTO livre (não vínculo com Instrutor), no mesmo
+    espírito do apresentador. Mostra os nomes como etiquetas, sem avatar/link.
+  */
+  if (ehPodcast) {
+    const convidados = (conteudo.convidados ?? "")
+      .split(",")
+      .map((nome) => nome.trim())
+      .filter(Boolean);
+    if (convidados.length === 0) return null;
+    return (
+      <section className="flex flex-col gap-3">
+        <h2 className="font-display text-lg font-semibold">
+          {convidados.length > 1 ? "Convidados" : "Convidado"}
+        </h2>
+        <ul className="flex flex-wrap gap-2">
+          {convidados.map((nome) => (
+            <li
+              key={nome}
+              className="border-borda-suave bg-superficie rounded-lg border px-3 py-1.5 text-sm"
+            >
+              {nome}
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
   return (
     <>
           {conteudo.instrutores.length > 0 && (
