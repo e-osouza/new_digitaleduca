@@ -104,7 +104,7 @@ export function PaginaPodcast({
    * nenhum vínculo, sai vazia e o título assume.
    */
   const pessoasEmFoco = (
-    emFoco?.participantes.length ? emFoco.participantes : (emFoco?.apresentadores ?? [])
+    emFoco?.convidados.length ? emFoco.convidados : (emFoco?.apresentadores ?? [])
   ).join(", ");
 
   /*
@@ -594,14 +594,12 @@ export function PaginaPodcast({
                 valor={emFoco.apresentadores.join(", ")}
               />
             )}
-            {emFoco.participantes.length > 0 && (
+            {emFoco.convidados.length > 0 && (
               <Ficha
                 rotulo={
-                  emFoco.participantes.length > 1
-                    ? "Participantes"
-                    : "Participante"
+                  emFoco.convidados.length > 1 ? "Convidados" : "Convidado"
                 }
-                valor={emFoco.participantes.join(", ")}
+                valor={emFoco.convidados.join(", ")}
               />
             )}
             {emFoco.categoria && (

@@ -43,28 +43,38 @@ export function rotaDoEpisodio(conteudoId: number) {
   return `/podcast?${PARAM_EPISODIO}=${conteudoId}`;
 }
 
+/** Lista separada por vírgula, como a API grava apresentador e convidados. */
+function nomesDoTexto(campo: string | null | undefined) {
+  return (campo ?? "")
+    .split(",")
+    .map((nome) => nome.trim())
+    .filter(Boolean);
+}
+
 /**
- * Quem apresenta e quem participa de um episódio.
+ * Quem apresenta e quem foi convidado num episódio.
  *
- * As duas origens convivem porque o modelo mudou em 19/08/2026. O apresentador
- * hoje é texto puro em `conteudos.apresentador` — vários nomes separados por
- * vírgula —, e é ele que manda. Cadastros anteriores gravaram o apresentador
- * como um vínculo de `papel: "APRESENTADOR"`, que serve de recurso final
- * enquanto esses episódios não forem reeditados.
+ * Os DOIS papéis são texto puro no conteúdo — `conteudos.apresentador` e
+ * `conteudos.convidados`, nomes separados por vírgula —, e é o texto que
+ * manda. O vínculo com Instrutor ficou como recurso final: os cadastros
+ * antigos gravavam as pessoas assim, e 21 dos 24 episódios ainda têm o vínculo
+ * repetindo o que o texto já diz.
  *
- * Os convidados continuam sendo vínculos: são pessoas do acervo, com perfil
- * público. Quem vier sem papel, ou como `INSTRUTOR`, entra como participante —
- * num podcast a apresentação é o papel declarado, o resto é quem foi conversar.
+ * O apresentador saiu do vínculo em 19/08/2026 e o convidado veio depois, no
+ * mesmo formato. Quem vier sem papel, ou como `INSTRUTOR`, é lido como
+ * convidado — num podcast a apresentação é o papel declarado; o resto é quem
+ * foi conversar.
  *
- * Nomes repetidos caem fora: o episódio 44 tem Rafael Liporace nas duas
- * origens, e sem isso ele apareceria duas vezes.
+ * Nomes repetidos caem fora: há episódio com a mesma pessoa nas duas origens,
+ * e sem isso ela apareceria duas vezes.
  */
 export function pessoasDoEpisodio(conteudo: {
   apresentador?: string | null;
+  convidados?: string | null;
   instrutores?: ConteudoInstrutor[];
 }) {
-  const doVinculo: string[] = [];
-  const participantes: string[] = [];
+  const apresentaNoVinculo: string[] = [];
+  const convidaNoVinculo: string[] = [];
   const vistos = new Set<number>();
 
   for (const vinculo of conteudo.instrutores ?? []) {
@@ -72,22 +82,27 @@ export function pessoasDoEpisodio(conteudo: {
     if (!pessoa?.nome || vistos.has(pessoa.id)) continue;
     vistos.add(pessoa.id);
 
-    (vinculo.papel === "APRESENTADOR" ? doVinculo : participantes).push(
-      pessoa.nome.trim(),
-    );
+    (vinculo.papel === "APRESENTADOR"
+      ? apresentaNoVinculo
+      : convidaNoVinculo
+    ).push(pessoa.nome.trim());
   }
 
-  const doTexto = (conteudo.apresentador ?? "")
-    .split(",")
-    .map((nome) => nome.trim())
-    .filter(Boolean);
+  const apresentadoresDoTexto = nomesDoTexto(conteudo.apresentador);
+  const convidadosDoTexto = nomesDoTexto(conteudo.convidados);
 
-  const apresentadores = doTexto.length > 0 ? doTexto : doVinculo;
+  const apresentadores =
+    apresentadoresDoTexto.length > 0
+      ? apresentadoresDoTexto
+      : apresentaNoVinculo;
+  const convidados =
+    convidadosDoTexto.length > 0 ? convidadosDoTexto : convidaNoVinculo;
+
   const chave = (nome: string) => nome.toLocaleLowerCase("pt-BR");
   const jaApresenta = new Set(apresentadores.map(chave));
 
   return {
     apresentadores,
-    participantes: participantes.filter((nome) => !jaApresenta.has(chave(nome))),
+    convidados: convidados.filter((nome) => !jaApresenta.has(chave(nome))),
   };
 }

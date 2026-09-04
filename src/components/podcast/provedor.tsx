@@ -25,8 +25,12 @@ export type Episodio = {
   descricao: string | null;
   /** Quem apresenta — `papel: "APRESENTADOR"` no vínculo da API. */
   apresentadores: string[];
-  /** Quem foi conversar — os demais vínculos, `CONVIDADO` à frente. */
-  participantes: string[];
+  /**
+   * Quem foi conversar, de `conteudos.convidados`. Não confundir com
+   * `convidado` acima, que é a primeira parte do TÍTULO — quase sempre o mesmo
+   * nome, mas vindo de outro lugar e usado como chamada do card.
+   */
+  convidados: string[];
   categoria: string | null;
   /** 0 a 100, já ouvido. */
   percentual: number;
@@ -613,7 +617,7 @@ export function ProvedorPodcast({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const pessoas = [...episodio.participantes, ...episodio.apresentadores];
+    const pessoas = [...episodio.convidados, ...episodio.apresentadores];
 
     navigator.mediaSession.metadata = new MediaMetadata({
       // O tema é o título do episódio; sem tema, o próprio nome do convidado.
